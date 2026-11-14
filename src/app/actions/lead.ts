@@ -1,0 +1,128 @@
+'use server';
+
+import { randomUUID } from 'node:crypto';
+import { LEAD_GOAL_LABEL, LEAD_SITE_TYPE_LABEL } from '@/lib/content/labels';
+import { getSiteContent } from '@/lib/content/site-content';
+import { resolveAddons } from '@/lib/domain/addons';
+import { toWhatsAppNumber } from '@/lib/domain/phone';
+import { buildLeadMessage, whatsappUrl } from '@/lib/domain/whatsapp';
+import { isConfigured, leadsLocked } from '@/lib/env.server';
+import { LEGAL_VERSION, leadInputSchema, type LeadActionState, type LeadField } from '@/lib/lead/lead-schema';
+import { sendCustomerConfirmation, sendOwnerBackup } from '@/lib/lead/notify';
+import { sendOwnerWhatsAppAlert } from '@/lib/lead/whatsapp-alert';
+import { logError, logInfo, logWarn } from '@/lib/logger';
+import { rateLimit } from '@/lib/security/rate-limit';
+import { getClientIp, hashIp, isSameOriginRequest } from '@/lib/security/request-meta';
+import { verifyTurnstile } from '@/lib/security/turnstile';
+import { getSanityLeadsWriteClient } from '@/sanity/lib/client';
+
+const FIELDS = ['name', 'phone', 'siteType', 'goal', 'message', 'email', 'consent', 'addons', 'website', 'turnstileToken', 'page', 'utmSource', 'utmMedium', 'utmCampaign'] as const;
+const LEAD_FIELDS = new Set<string>(['name', 'phone', 'siteType', 'message', 'email', 'consent']);
+
+function readForm(formData: FormData): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const field of FIELDS) {
+    const value = formData.get(field);
+    out[field] = typeof value === 'string' ? value : undefined;
+  }
+  return out;
+}
+
+export async function submitLead(_prev: LeadActionState, formData: FormData): Promise<LeadActionState> {
+  if (leadsLocked) return { status: 'error' };
+  if (!(await isSameOriginRequest())) {
+    logWarn('lead', 'Origin mismatch');
+    return { status: 'error' };
+  }
+
+  const parsed = leadInputSchema.safeParse(readForm(formData));
+  if (!parsed.success) {
+    const fieldErrors: Partial<Record<LeadField, string>> = {};
+    for (const issue of parsed.error.issues) {
+      const field = String(issue.path[0]);
+      if (LEAD_FIELDS.has(field) && !fieldErrors[field as LeadField]) fieldErrors[field as LeadField] = issue.message;
+    }
+    if (Object.keys(fieldErrors).length === 0) return { status: 'error' };
+    return { status: 'invalid', fieldErrors };
+  }
+  const lead = parsed.data;
+
+  const ip = await getClientIp();
+  const ipHash = hashIp(ip);
+
+  // Honeypot: generic error, nothing stored.
+  if (lead.website) {
+    logWarn('lead', 'Honeypot triggered', { ipHash: ipHash.slice(0, 12) });
+    return { status: 'error' };
+  }
+
+  if (!(await rateLimit('leadIp', ipHash)) || !(await rateLimit('leadPhone', lead.phone))) {
+    return { status: 'rate-limited' };
+  }
+
+  if (!(await verifyTurnstile(lead.turnstileToken, ip, 'lead'))) {
+    return { status: 'error' };
+  }
+
+  const content = await getSiteContent();
+  /** Public promise: by appointment only — never clock hours on the site or in emails. */
+  const replyWindow = 'בתיאום מראש';
+  const addonTitles = resolveAddons(content.addons, lead.addons, lead.siteType).map((a) => a.title);
+
+  let savedInSanity = false;
+  if (isConfigured.sanityWrite()) {
+    try {
+      const now = new Date().toISOString();
+      await getSanityLeadsWriteClient().create({
+        _type: 'lead',
+        status: 'new',
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email,
+        siteType: lead.siteType,
+        goal: lead.goal ? LEAD_GOAL_LABEL[lead.goal] : undefined,
+        // A snapshot of the titles, so the lead still reads right after an extra is renamed or retired.
+        addons: addonTitles,
+        message: lead.message,
+        createdAt: now,
+        consent: { acceptedAt: now, legalVersion: LEGAL_VERSION },
+        source: { page: lead.page, utmSource: lead.utmSource, utmMedium: lead.utmMedium, utmCampaign: lead.utmCampaign },
+        ipHash,
+      });
+      savedInSanity = true;
+    } catch (error) {
+      logError('lead.sanity', error);
+    }
+  }
+
+  const [emailed, , whatsapped] = await Promise.all([
+    sendOwnerBackup(lead, addonTitles, replyWindow, savedInSanity),
+    sendCustomerConfirmation(lead, replyWindow),
+    sendOwnerWhatsAppAlert(lead),
+  ]);
+  const ownerNotified = emailed || whatsapped;
+
+  if (!savedInSanity && !ownerNotified && isConfigured.sanityWrite()) {
+    // Nowhere holds this lead; tell the customer to use WhatsApp directly.
+    return { status: 'error' };
+  }
+
+  const submissionId = randomUUID();
+  logInfo('lead', 'Lead received', { submissionId, savedInSanity, emailed, whatsapped, siteType: lead.siteType, addons: addonTitles.length });
+
+  const text = buildLeadMessage({
+    name: lead.name,
+    siteTypeLabel: LEAD_SITE_TYPE_LABEL[lead.siteType],
+    goalLabel: lead.goal ? LEAD_GOAL_LABEL[lead.goal] : undefined,
+    message: lead.message,
+    addons: addonTitles,
+  });
+  return {
+    status: 'success',
+    name: lead.name,
+    whatsappUrl: whatsappUrl(toWhatsAppNumber(content.settings.whatsappE164), text),
+    submissionId,
+    addons: addonTitles,
+    replyWindow,
+  };
+}

@@ -1,0 +1,62 @@
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages, getTranslations } from 'next-intl/server';
+import { draftMode, headers } from 'next/headers';
+import { VisualEditing } from 'next-sanity/visual-editing';
+import { LeadDrawer } from '@/components/lead/LeadDrawer';
+import { ButtonFx } from '@/components/motion/ButtonFx';
+import { CustomCursor } from '@/components/motion/CustomCursor';
+import { Intro } from '@/components/motion/Intro';
+import { SmoothScroll } from '@/components/motion/SmoothScroll';
+import { TextMotion } from '@/components/motion/TextMotion';
+import { Analytics } from '@/components/site/Analytics';
+import { WebVitals } from '@/components/site/WebVitals';
+import { AnnouncementBar } from '@/components/site/AnnouncementBar';
+import { CookieBanner } from '@/components/site/CookieBanner';
+import { Footer } from '@/components/site/Footer';
+import { Header } from '@/components/site/Header';
+import { StickyCta } from '@/components/site/StickyCta';
+import { WhatsAppFab } from '@/components/site/WhatsAppFab';
+import { getSiteContent } from '@/lib/content/site-content';
+import { publicEnv } from '@/lib/env.public';
+import { leadsLocked } from '@/lib/env.server';
+import { toWhatsAppNumber } from '@/lib/domain/phone';
+
+export default async function SiteLayout({ children }: LayoutProps<'/'>) {
+  const [content, messages, t, requestHeaders, draft] = await Promise.all([
+    getSiteContent(),
+    getMessages(),
+    getTranslations('common'),
+    headers(),
+    draftMode(),
+  ]);
+  const nonce = requestHeaders.get('x-nonce') ?? undefined;
+  const whatsappNumber = toWhatsAppNumber(content.settings.whatsappE164);
+
+  return (
+    <NextIntlClientProvider messages={messages}>
+      <Intro brand={content.settings.brandName} />
+      <a href="#main" className="sr-only-focusable fixed right-3 top-3 z-[100] rounded-lg bg-pearl px-4 py-2 text-abyss">
+        {t('skipToContent')}
+      </a>
+      <AnnouncementBar announcement={content.announcement} />
+      <Header />
+      <main id="main" tabIndex={-1} className="outline-none">
+        {children}
+      </main>
+      <Footer content={content} />
+      <StickyCta whatsappNumber={whatsappNumber} />
+      <WhatsAppFab whatsappNumber={whatsappNumber} />
+      <LeadDrawer whatsappNumber={whatsappNumber} addons={content.addons} nonce={nonce} locked={leadsLocked} />
+      <CookieBanner />
+      <div className="grain" aria-hidden="true" />
+      <div className="depth-biolume" aria-hidden="true" />
+      <SmoothScroll />
+      <TextMotion />
+      <ButtonFx />
+      <CustomCursor />
+      <Analytics nonce={nonce} ga4Id={publicEnv.ga4Id} clarityId={publicEnv.clarityId} />
+      <WebVitals />
+      {draft.isEnabled && <VisualEditing />}
+    </NextIntlClientProvider>
+  );
+}

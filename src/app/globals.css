@@ -1,0 +1,1839 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-abyss: #0c1626;
+  --color-ink: #111e33;
+  --color-ink-2: #182842;
+  --color-pearl: #efe9de;
+  --color-mist: #9ba7ab;
+  --color-gold: #c9a66b;
+  --color-gold-soft: #e8d4a8;
+  --color-lake: #3e9aa8;
+  --color-danger: #ff9585;
+
+  --font-display: var(--font-frank), 'Times New Roman', serif;
+  --font-sans: var(--font-heebo), system-ui, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-lux: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-snap: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Contact shadows: key + ambient + rim (not a single black blob) */
+  --shadow-contact-sm:
+    0 1px 1px rgb(0 0 0 / 0.55),
+    0 4px 12px -2px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-contact-md:
+    0 1px 2px rgb(0 0 0 / 0.5),
+    0 8px 24px -6px rgb(0 0 0 / 0.55),
+    0 24px 48px -16px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --shadow-gold-lift:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 2px 4px rgb(120 80 30 / 0.25),
+    0 12px 36px -8px rgb(201 166 107 / 0.55),
+    0 28px 56px -20px rgb(0 0 0 / 0.55);
+}
+
+/* Mirrors src/lib/motion-tokens.ts */
+:root {
+  --motion-instant: 100ms;
+  --motion-fast: 200ms;
+  --motion-base: 300ms;
+  --motion-slow: 600ms;
+  --motion-lux: 1100ms;
+  --motion-settle: 2000ms;
+  --motion-stagger: 60ms;
+  --motion-distance: 28px;
+  --motion-shake: 6px;
+  --intro-ms: 1300ms;
+
+  --sticky-cta-height: 0px;
+  --header-height: 4.5rem;
+  /* Dive story: 0 at the surface → 1 at the seabed (DepthMeter). */
+  --depth: 0;
+  --depth-m: 0;
+  color-scheme: dark;
+}
+
+/* Base and component rules live in layers so Tailwind utilities (hidden, leading-*, outline-none…) can override them. */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: var(--color-abyss);
+  }
+  html:not(.lenis) {
+    scroll-behavior: smooth;
+  }
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-stopped {
+    overflow: clip;
+  }
+  .lenis [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  body {
+    /* Surface: teal-tinted abyss. Deeper scroll → colder, darker water. */
+    background: color-mix(
+      in srgb,
+      #071820 calc(var(--depth) * 72%),
+      color-mix(in srgb, #0e3a48 28%, var(--color-abyss))
+    );
+    color: var(--color-pearl);
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+    /* Room for the mobile sticky CTA so it never covers the end of the page. */
+    padding-bottom: var(--sticky-cta-height);
+    transition: background-color 200ms linear;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: var(--color-abyss);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-soft);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  /* Anchor targets clear the sticky header */
+  [id] {
+    scroll-margin-top: 6rem;
+  }
+
+  /* The router scrolls a new page's first element into view; keep it clear of the sticky header (and announcement bar). */
+  main > * {
+    scroll-margin-top: 8rem;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0.8rem 1.9rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--color-gold-soft) 0%, var(--color-gold) 55%, #a8854c 100%);
+    color: #120d05;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.45),
+      0 10px 40px -12px rgb(201 166 107 / 0.55);
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out);
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: -50% auto -50% -60%;
+    width: 40%;
+    z-index: -1;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.55), transparent);
+    transform: translateX(-120%) skewX(-18deg);
+    transition: transform 900ms var(--ease-out);
+  }
+  .btn-primary:hover {
+    box-shadow: var(--shadow-gold-lift);
+  }
+  .btn-primary:hover::after {
+    transform: translateX(520%) skewX(-18deg);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+  .btn-primary:disabled {
+    cursor: progress;
+  }
+
+  .btn-secondary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0.8rem 1.9rem;
+    border-radius: 999px;
+    border: 1px solid rgb(239 233 222 / 0.28);
+    color: var(--color-pearl);
+    font-weight: 500;
+    backdrop-filter: blur(6px);
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      color var(--motion-base) var(--ease-out),
+      background-color var(--motion-base) var(--ease-out);
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold-soft);
+    background: rgb(201 166 107 / 0.06);
+  }
+
+  .link {
+    text-decoration: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    padding-bottom: 2px;
+    transition:
+      background-size var(--motion-slow) var(--ease-out),
+      color var(--motion-base) var(--ease-out);
+  }
+  .link:hover {
+    color: var(--color-gold-soft);
+  }
+  .link-reveal {
+    background-size: 0% 1px;
+    background-position: 0 100%;
+  }
+  .link-reveal:hover,
+  .link-reveal[aria-current='page'] {
+    background-size: 100% 1px;
+  }
+
+  /* Gold is reserved for the primary CTA — section labels use lake/mist instead. */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    color: color-mix(in srgb, var(--color-lake) 70%, var(--color-mist));
+  }
+  .eyebrow::before {
+    content: '';
+    width: 2.5rem;
+    height: 1px;
+    background: linear-gradient(to left, var(--color-lake), transparent);
+  }
+
+  .text-gilded {
+    background: linear-gradient(180deg, #f5e6c4 0%, var(--color-gold) 60%, #8f6f3c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(239 233 222 / 0.32);
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(to left, transparent, rgb(239 233 222 / 0.18) 20%, rgb(239 233 222 / 0.18) 80%, transparent);
+  }
+
+  .glass {
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015));
+    border: 1px solid rgb(239 233 222 / 0.1);
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: var(--shadow-contact-sm);
+  }
+}
+
+/* ───────── Split text: words rise out of a mask ───────── */
+.split-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-block: 0.08em 0.14em;
+  margin-block: -0.08em -0.14em;
+}
+.split-word > span {
+  display: inline-block;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Above the fold: plays on load, no JavaScript needed. */
+  .split-now .split-word > span {
+    animation: word-rise var(--motion-lux) var(--ease-out) both;
+    animation-delay: calc(var(--split-delay, 0ms) + var(--i) * 70ms);
+  }
+  /* Below the fold: <Reveal> adds .is-visible. */
+  @media (scripting: enabled) {
+    .split-scroll:not(.is-visible) .split-word > span {
+      transform: translateY(110%);
+    }
+    .split-scroll .split-word > span {
+      transition: transform var(--motion-lux) var(--ease-out);
+      transition-delay: calc(var(--i) * 55ms);
+    }
+  }
+}
+@keyframes word-rise {
+  from {
+    transform: translateY(110%);
+  }
+}
+
+/* Generic reveal: opacity + 28px, once. */
+.reveal {
+  opacity: 1;
+  transform: none;
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  /* 0.01, not 0: invisible to the eye, but the browser counts the text as painted, so LCP isn't held back by the entrance. */
+  .reveal:not(.is-visible) {
+    opacity: 0.01;
+    transform: translateY(var(--motion-distance));
+  }
+  .reveal {
+    transition:
+      opacity var(--motion-lux) var(--ease-out),
+      transform var(--motion-lux) var(--ease-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* Fades in after the intro, used on hero support copy. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise-in {
+    animation: rise-in var(--motion-lux) var(--ease-out) both;
+    animation-delay: var(--rise-delay, 0ms);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0.01;
+    transform: translateY(20px);
+  }
+}
+
+/* ───────── Intro (first paint only; CSS-driven so it never blocks without JavaScript) ───────── */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: var(--color-abyss);
+  pointer-events: none;
+  animation: intro-out 900ms var(--ease-lux) calc(var(--intro-ms) - 300ms) forwards;
+}
+.intro-mark {
+  animation: intro-mark 1200ms var(--ease-out) both;
+}
+.intro-line {
+  transform-origin: center;
+  animation: intro-line 1100ms var(--ease-lux) 200ms both;
+}
+/* Repeat visits skip the intro, so above-the-fold motion starts ~1s earlier. */
+html.intro-seen .split-now .split-word > span {
+  animation-delay: calc(max(0ms, var(--split-delay, 0ms) - 1000ms) + var(--i) * 70ms);
+}
+html.intro-seen .rise-in {
+  animation-delay: max(0ms, var(--rise-delay, 0ms) - 1000ms);
+}
+html.intro-seen .intro {
+  display: none;
+}
+@keyframes intro-out {
+  to {
+    clip-path: inset(0 0 100% 0);
+    visibility: hidden;
+  }
+}
+@keyframes intro-mark {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(8px);
+  }
+}
+@keyframes intro-line {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
+}
+
+/* ───────── Page transition (template.tsx remounts per route) ───────── */
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    /* backwards, not both: a lingering transform would break position: fixed (pinned scenes) inside. */
+    animation: page-enter 900ms var(--ease-out) 120ms backwards;
+  }
+  .page-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 85;
+    pointer-events: none;
+    background: var(--color-ink);
+    transform-origin: top;
+    animation: curtain-up 800ms var(--ease-lux) forwards;
+  }
+  .page-curtain::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(to left, transparent, var(--color-gold), transparent);
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(24px);
+  }
+}
+@keyframes curtain-up {
+  to {
+    transform: scaleY(0);
+    visibility: hidden;
+  }
+}
+
+/* ───────── Film grain + vignette ───────── */
+.grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-motion: no-preference) {
+  .grain {
+    animation: grain 1.2s steps(6) infinite;
+  }
+}
+@keyframes grain {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-3%, 2%);
+  }
+  40% {
+    transform: translate(2%, -4%);
+  }
+  60% {
+    transform: translate(-4%, -2%);
+  }
+  80% {
+    transform: translate(3%, 4%);
+  }
+}
+
+/* ───────── Hero poster: the scene's resting frame, also the fallback ───────── */
+.scene-poster {
+  background:
+    radial-gradient(70% 50% at 50% -10%, rgb(62 154 168 / 0.14), transparent 70%),
+    linear-gradient(to bottom, #12213a 0%, var(--color-abyss) 70%);
+}
+/* The glow where the 3D object sits; it gives way once the live scene is drawing its own light. */
+.scene-poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(28% 34% at 30% 46%, rgb(232 212 168 / 0.22), transparent 70%),
+    radial-gradient(18% 22% at 26% 40%, rgb(255 244 220 / 0.18), transparent 70%),
+    radial-gradient(45% 55% at 34% 52%, rgb(62 154 168 / 0.16), transparent 72%);
+  transition: opacity 1.6s var(--ease-out);
+}
+.scene-poster:has(> canvas[data-live])::before {
+  opacity: 0;
+}
+@media (max-width: 767px) {
+  /* Mobile fallback that still reads as a shell/pearl when WebGL is late or skipped. */
+  .scene-poster::before {
+    background:
+      radial-gradient(42% 28% at 50% 26%, rgb(255 244 220 / 0.28), transparent 68%),
+      radial-gradient(58% 36% at 50% 30%, rgb(232 212 168 / 0.22), transparent 70%),
+      radial-gradient(78% 42% at 50% 34%, rgb(62 154 168 / 0.2), transparent 74%);
+  }
+  .scene-poster::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 22%;
+    width: min(72vw, 18rem);
+    height: min(42vw, 11rem);
+    translate: -50% 0;
+    border-radius: 50% 50% 42% 42%;
+    border: 1px solid rgb(232 212 168 / 0.28);
+    background:
+      radial-gradient(circle at 50% 58%, rgb(255 244 220 / 0.35), transparent 42%),
+      radial-gradient(ellipse at 50% 40%, rgb(62 154 168 / 0.18), transparent 70%);
+    box-shadow:
+      0 0 40px rgb(232 212 168 / 0.12),
+      inset 0 -12px 28px rgb(8 16 28 / 0.35);
+    opacity: 0.9;
+    transition: opacity 1.6s var(--ease-out);
+  }
+  .scene-poster:has(> canvas[data-live])::after {
+    opacity: 0;
+  }
+}
+
+/* Static product stand-in until WebGL paints (and forever if it fails). */
+.product-stage-poster {
+  background:
+    radial-gradient(42% 55% at 50% 48%, rgb(232 212 168 / 0.22), transparent 70%),
+    radial-gradient(28% 38% at 50% 42%, rgb(255 244 220 / 0.16), transparent 68%),
+    radial-gradient(60% 70% at 50% 60%, rgb(62 154 168 / 0.12), transparent 72%);
+  transition: opacity 1.2s var(--ease-out);
+}
+.product-stage[data-kind='perfume'] .product-stage-poster::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(28%, 7.5rem);
+  height: min(62%, 22rem);
+  translate: -50% -52%;
+  border-radius: 40% 40% 18% 18% / 12% 12% 28% 28%;
+  border: 1px solid rgb(232 212 168 / 0.35);
+  background:
+    linear-gradient(180deg, rgb(255 244 220 / 0.2), transparent 35%),
+    linear-gradient(180deg, rgb(201 166 107 / 0.25), rgb(62 154 168 / 0.12) 55%, rgb(12 22 38 / 0.4));
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.35);
+}
+.product-stage[data-kind='diamond'] .product-stage-poster::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(38%, 11rem);
+  height: min(38%, 11rem);
+  translate: -50% -50%;
+  rotate: 45deg;
+  border: 1px solid rgb(232 212 168 / 0.4);
+  background:
+    linear-gradient(135deg, rgb(255 244 220 / 0.35), transparent 45%),
+    linear-gradient(225deg, rgb(62 154 168 / 0.25), rgb(12 22 38 / 0.5));
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.4);
+}
+.product-stage[data-live] .product-stage-poster {
+  opacity: 0;
+}
+.product-stage[data-failed] .product-stage-poster {
+  opacity: 1;
+}
+
+/* ───────── Hero dive: a pinned stage scrolled through, into the pearl (HeroDive.tsx sets --dive 0..1) ───────── */
+/* Desktop: long dive so the pearl breath is felt. Phone: short one-swipe dive (does not stick). */
+.hero-dive.is-diving {
+  height: 240svh;
+}
+@media (max-width: 767px) {
+  .hero-dive.is-diving {
+    height: 130svh;
+  }
+}
+
+/* ───────── Abalone: the method and 3D sections open into the colours of the inside of a shell, then close back (SurfaceZone sets --surface 0..1) ───────── */
+.surface-color {
+  --iris-r: calc(var(--surface, 0) * 90vmax);
+  --drift: calc(var(--surface, 0) * 18%);
+  /* Ocean layers — teal / deep blue, not purple SaaS blobs. */
+  background:
+    radial-gradient(38% 32% at calc(82% - var(--drift)) 18%, rgb(120 220 210 / 0.18), transparent 70%),
+    radial-gradient(55% 50% at calc(10% + var(--drift)) 85%, rgb(62 154 168 / 0.45), transparent 70%),
+    radial-gradient(50% 45% at 55% calc(70% - var(--drift)), rgb(20 70 100 / 0.5), transparent 70%),
+    radial-gradient(60% 55% at calc(75% - var(--drift)) 40%, rgb(12 40 70 / 0.55), transparent 70%),
+    linear-gradient(160deg, #0a3540 0%, #0f2a48 45%, #0c1e38 75%, #091018 100%);
+  /* A soft-edged iris, never a hard circle, with the screen edges melting into the dark. */
+  -webkit-mask-image:
+    radial-gradient(circle at 50% 50%, #000 calc(var(--iris-r) - 12vmax), transparent var(--iris-r)),
+    linear-gradient(to bottom, transparent, #000 10vh, #000 calc(100% - 10vh), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    radial-gradient(circle at 50% 50%, #000 calc(var(--iris-r) - 12vmax), transparent var(--iris-r)),
+    linear-gradient(to bottom, transparent, #000 10vh, #000 calc(100% - 10vh), transparent);
+  mask-composite: intersect;
+}
+/* Nacre sheen: a band of pastel colour that slides across as you scroll. */
+.surface-color::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgb(120 220 210 / 0.22) 35%,
+    rgb(190 150 235 / 0.22) 45%,
+    rgb(240 200 150 / 0.2) 55%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  background-position: calc(100% - var(--surface, 0) * 100%) 0;
+  mix-blend-mode: soft-light;
+}
+.surface-ring {
+  inset-inline-start: 50%;
+  top: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  margin: -90vmax 0 0 -90vmax;
+  border-radius: 50%;
+  box-shadow:
+    0 0 60px 10px rgb(232 212 168 / 0.25),
+    0 0 140px 40px rgb(62 154 168 / 0.25);
+  scale: calc(var(--surface, 0) * 0.94);
+  /* Only while the iris is moving: gone when fully closed or fully open. */
+  opacity: clamp(0, calc(min(var(--surface, 0), 1 - var(--surface, 0)) * 4), 1);
+}
+.surface-zone.is-still .surface-color {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10vh, #000 calc(100% - 10vh), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 10vh, #000 calc(100% - 10vh), transparent);
+}
+.surface-zone.is-still .surface-ring {
+  display: none;
+}
+.surface-zone .eyebrow,
+.surface-zone [data-mark] {
+  transition: color 500ms var(--ease-out);
+}
+.surface-zone.is-surfaced .eyebrow {
+  color: var(--color-gold-soft);
+}
+.surface-zone.is-surfaced [data-mark] {
+  color: rgb(239 233 222 / 0.65);
+}
+.surface-zone.is-surfaced [data-mark][data-active] {
+  color: var(--color-pearl);
+}
+/* ───────── Sunset: the same iris at the end of the page, in the colours of the Kinneret at dusk (SurfaceZone tone="sunset") ───────── */
+.surface-zone--sunset .surface-color {
+  /* Seabed / pearl return — dark with a soft nacre glow, not pink-purple SaaS. */
+  background:
+    radial-gradient(38% 32% at calc(80% - var(--drift)) 20%, rgb(232 212 168 / 0.22), transparent 70%),
+    radial-gradient(55% 50% at calc(12% + var(--drift)) 82%, rgb(62 154 168 / 0.28), transparent 70%),
+    radial-gradient(50% 45% at 55% calc(68% - var(--drift)), rgb(20 50 70 / 0.45), transparent 70%),
+    radial-gradient(60% 55% at calc(72% - var(--drift)) 42%, rgb(8 20 36 / 0.7), transparent 70%),
+    linear-gradient(160deg, #071018 0%, #0c1a28 40%, #0a1420 70%, #050a10 100%);
+}
+.surface-zone--sunset .surface-color::after {
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgb(255 205 140 / 0.24) 35%,
+    rgb(255 150 165 / 0.2) 45%,
+    rgb(250 225 170 / 0.22) 55%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  background-position: calc(100% - var(--surface, 0) * 100%) 0;
+}
+.surface-zone--sunset .surface-ring {
+  box-shadow:
+    0 0 60px 10px rgb(255 205 140 / 0.3),
+    0 0 140px 40px rgb(236 122 84 / 0.25);
+}
+/* Over the warm light the glass needs more body, or the copy inside it loses contrast. */
+.glass-deep {
+  background: linear-gradient(160deg, rgb(12 22 38 / 0.82), rgb(12 22 38 / 0.66));
+}
+
+/* Touch: the swipe glides through the dive too fast for the scroll-tied light, so it plays as one timed flash. */
+.hero-dive.is-flashing .hero-veil-light {
+  z-index: 1;
+  animation: dive-flash 1300ms var(--ease-out) forwards;
+}
+@media (min-width: 768px) {
+  .hero-dive.is-flashing .hero-veil-light {
+    animation-duration: 2400ms;
+  }
+}
+@keyframes dive-flash {
+  0% {
+    opacity: 0;
+    scale: 0.7;
+  }
+  30% {
+    opacity: 1;
+    scale: 1.05;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+.hero-dive.is-diving .hero-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+.hero-dive .hero-content {
+  opacity: clamp(0, calc(1 - var(--dive, 0) * 4.5), 1);
+}
+.hero-dive .hero-lift {
+  translate: 0 calc(var(--dive, 0) * -16vh);
+}
+@media (min-width: 768px) {
+  .hero-dive .hero-content {
+    opacity: clamp(0, calc(1 - var(--dive, 0) * 2.4), 1);
+  }
+  .hero-dive .hero-lift {
+    translate: 0 calc(var(--dive, 0) * -22vh);
+  }
+}
+.hero-veil-light,
+.hero-veil-dark {
+  opacity: 0;
+}
+.hero-dive.is-diving .hero-veil-light {
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 250 240 / 0.7), rgb(255 240 215 / 0.2) 14%, transparent 30%),
+    conic-gradient(
+      from calc(var(--dive, 0) * 260deg) at 50% 50%,
+      rgb(60 210 170 / 0.55),
+      rgb(90 150 245 / 0.5),
+      rgb(180 105 230 / 0.5),
+      rgb(250 180 120 / 0.45),
+      rgb(60 210 170 / 0.55)
+    );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 66%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 22%, transparent 66%);
+  /* Phone: snappy breath. Desktop: long hold into the iris. */
+  opacity: clamp(0, min(calc((var(--dive, 0) - 0.68) / 0.12), calc((0.95 - var(--dive, 0)) / 0.1)), 1);
+  scale: calc(0.7 + var(--dive, 0) * 0.5);
+}
+@media (min-width: 768px) {
+  .hero-dive.is-diving .hero-veil-light {
+    opacity: clamp(0, min(calc((var(--dive, 0) - 0.32) / 0.2), calc((0.88 - var(--dive, 0)) / 0.2)), 1);
+    scale: calc(0.65 + var(--dive, 0) * 0.55);
+  }
+}
+.hero-dive.is-diving .hero-veil-dark {
+  --iris: clamp(0, calc((var(--dive, 0) - 0.72) / 0.22), 1);
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent calc((1 - var(--iris)) * 80vmax - 22vmax),
+    rgb(50 170 150 / 0.35) calc((1 - var(--iris)) * 80vmax - 13vmax),
+    rgb(30 70 110 / 0.55) calc((1 - var(--iris)) * 80vmax - 6vmax),
+    var(--color-abyss) calc((1 - var(--iris)) * 80vmax)
+  );
+  opacity: 1;
+}
+@media (min-width: 768px) {
+  .hero-dive.is-diving .hero-veil-dark {
+    --iris: clamp(0, calc((var(--dive, 0) - 0.5) / 0.42), 1);
+  }
+}
+
+/* The word born from the pearl as the iris closes — dive leads to a payoff, not empty blur. */
+.hero-dive-reveal {
+  opacity: 0;
+  scale: 0.86;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 40px rgb(232 212 168 / 0.35);
+}
+.hero-dive.is-diving .hero-dive-reveal {
+  opacity: clamp(0, calc((var(--dive, 0) - 0.78) / 0.14), 1);
+  scale: calc(0.86 + var(--dive, 0) * 0.14);
+}
+@media (min-width: 768px) {
+  .hero-dive.is-diving .hero-dive-reveal {
+    opacity: clamp(0, calc((var(--dive, 0) - 0.62) / 0.22), 1);
+  }
+}
+
+/* Depth story helpers */
+.depth-biolume {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: calc(var(--depth) * 0.55);
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 22%, rgb(120 220 210 / 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 78% 38%, rgb(90 200 190 / 0.4), transparent),
+    radial-gradient(1px 1px at 34% 68%, rgb(150 230 220 / 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 88% 72%, rgb(62 154 168 / 0.5), transparent),
+    radial-gradient(1px 1px at 56% 18%, rgb(180 240 230 / 0.35), transparent),
+    radial-gradient(1px 1px at 22% 84%, rgb(100 210 200 / 0.4), transparent);
+  mix-blend-mode: screen;
+}
+.waterline-wash {
+  background:
+    linear-gradient(to bottom, transparent 0%, rgb(62 154 168 / 0.06) 42%, rgb(8 20 36 / 0.35) 58%, rgb(5 12 22 / 0.55) 100%);
+}
+.waterline-below {
+  filter: saturate(0.75);
+  opacity: 0.82;
+}
+@media (min-width: 768px) {
+  .waterline-below {
+    mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.75), #000);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-dot {
+    animation: pulse-dot 2.4s ease-out infinite;
+  }
+}
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgb(95 211 141 / 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px rgb(95 211 141 / 0);
+  }
+}
+/* Project art when there is no screenshot: per-project tint from --tint */
+.project-art {
+  background:
+    radial-gradient(60% 70% at 75% 20%, color-mix(in oklab, var(--tint) 70%, white 8%), transparent 70%),
+    radial-gradient(70% 60% at 15% 100%, color-mix(in oklab, var(--tint) 55%, black 20%), transparent 70%),
+    linear-gradient(160deg, color-mix(in oklab, var(--tint) 35%, #0a1424) 0%, #09121f 100%);
+}
+
+/* ───────── Custom cursor ───────── */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+html.has-cursor input,
+html.has-cursor textarea {
+  cursor: text !important;
+}
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 95;
+  pointer-events: none;
+  border-radius: 999px;
+  will-change: transform;
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--color-gold-soft);
+}
+.cursor-ring {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 1px solid rgb(232 212 168 / 0.55);
+  color: var(--color-abyss);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  transition:
+    width var(--motion-base) var(--ease-out),
+    height var(--motion-base) var(--ease-out),
+    margin var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out),
+    border-color var(--motion-base) var(--ease-out),
+    opacity var(--motion-base) var(--ease-out);
+}
+.cursor-ring[data-state='hover'] {
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-color: var(--color-gold);
+  background: rgb(201 166 107 / 0.1);
+}
+.cursor-ring[data-state='view'] {
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  border-color: transparent;
+  background: var(--color-gold-soft);
+}
+.cursor-ring[data-state='text'] {
+  width: 4px;
+  height: 28px;
+  margin: -14px 0 0 -2px;
+  border-radius: 2px;
+  background: var(--color-gold-soft);
+}
+.cursor-hidden {
+  opacity: 0;
+}
+
+/* FAQ: opacity + 8px only, no height animation */
+@media (prefers-reduced-motion: no-preference) {
+  details[open] > .faq-answer {
+    animation: faq-in var(--motion-slow) var(--ease-out);
+  }
+}
+@keyframes faq-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Form error shake */
+@media (prefers-reduced-motion: no-preference) {
+  .shake {
+    animation: shake 300ms var(--ease-out);
+  }
+}
+@keyframes shake {
+  25% {
+    transform: translateX(calc(var(--motion-shake) * -1));
+  }
+  75% {
+    transform: translateX(var(--motion-shake));
+  }
+}
+
+/* Lead drawer: enters from the left (the "end" side in RTL) */
+dialog.drawer {
+  margin: 0;
+  max-height: 100dvh;
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+  background:
+    radial-gradient(80% 40% at 50% 0%, rgb(62 154 168 / 0.12), transparent 70%),
+    var(--color-ink);
+  color: var(--color-pearl);
+}
+@media (min-width: 768px) {
+  dialog.drawer {
+    width: 32rem;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    border-inline-end: 1px solid rgb(239 233 222 / 0.08);
+  }
+}
+dialog.drawer::backdrop {
+  background: rgb(12 22 38 / 0.7);
+  backdrop-filter: blur(6px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog.drawer[open] {
+    animation: drawer-in 700ms var(--ease-lux);
+  }
+  dialog.drawer[open]::backdrop {
+    animation: fade-in var(--motion-slow) var(--ease-out);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Signature moment: ripple → check */
+@media (prefers-reduced-motion: no-preference) {
+  .sig-ripple {
+    animation: sig-ripple 600ms var(--ease-out) forwards;
+  }
+  .sig-check path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: sig-check 300ms var(--ease-out) 600ms forwards;
+  }
+}
+@keyframes sig-ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+@keyframes sig-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Lead wizard: the frame eases to each step's height; steps leave upward and arrive from below */
+@media (prefers-reduced-motion: no-preference) {
+  .wizard-frame.is-ready {
+    transition: height 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .wizard-step {
+    animation: wizard-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .wizard-step.is-leaving {
+    animation: wizard-out 160ms ease-in forwards;
+  }
+}
+@keyframes wizard-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes wizard-out {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+/* Scroll cue in the hero */
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-cue::after {
+    animation: scroll-cue 2.2s var(--ease-lux) infinite;
+  }
+}
+.scroll-cue {
+  position: relative;
+  overflow: hidden;
+}
+.scroll-cue::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-gold);
+  transform-origin: top;
+}
+@keyframes scroll-cue {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/* Sound bars */
+.sound-bar {
+  transform-origin: bottom;
+  transform: scaleY(0.3);
+  transition: transform var(--motion-base) var(--ease-out);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [aria-pressed='true'] .sound-bar {
+    animation: sound-bar 900ms ease-in-out infinite alternate;
+    animation-delay: calc(var(--i) * -230ms);
+  }
+}
+@keyframes sound-bar {
+  from {
+    transform: scaleY(0.25);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ───────── Text motion: copy surfaces out of a soft blur as it scrolls in (TextMotion.tsx adds .tm / .tm-in) ───────── */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .text-motion .tm {
+    transition:
+      opacity 1000ms var(--ease-out),
+      translate 1000ms var(--ease-out),
+      filter 1000ms var(--ease-out),
+      letter-spacing 1400ms var(--ease-out);
+    transition-delay: var(--tm-delay, 0ms);
+  }
+  .text-motion .tm:not(.tm-in) {
+    opacity: 0;
+    translate: 0 0.6em;
+    filter: blur(8px);
+  }
+  /* Eyebrows: the letters gather in while the gold rule draws itself. */
+  .text-motion .eyebrow.tm:not(.tm-in) {
+    translate: none;
+    letter-spacing: 0.7em;
+  }
+  .text-motion .eyebrow.tm::before {
+    transform-origin: right;
+    transition: transform 1200ms var(--ease-lux);
+    transition-delay: calc(var(--tm-delay, 0ms) + 150ms);
+  }
+  .text-motion .eyebrow.tm:not(.tm-in)::before {
+    transform: scaleX(0);
+  }
+}
+
+/* Gold words in headlines: a slow band of light passes over them now and then. */
+@media (prefers-reduced-motion: no-preference) {
+  .split-word .text-gilded {
+    background-image:
+      linear-gradient(105deg, transparent 40%, rgb(255 248 230 / 0.95) 50%, transparent 60%),
+      linear-gradient(180deg, #f5e6c4 0%, var(--color-gold) 60%, #8f6f3c 100%);
+    background-size:
+      250% 100%,
+      100% 100%;
+    background-repeat: no-repeat;
+    animation: gilded-sheen 6.5s var(--ease-lux) 1.8s infinite;
+  }
+}
+@keyframes gilded-sheen {
+  0%,
+  55% {
+    background-position:
+      130% 0,
+      0 0;
+  }
+  85%,
+  100% {
+    background-position:
+      -30% 0,
+      0 0;
+  }
+}
+
+/* ───────── Buttons: instant press feedback, a light that calls the eye to the main action ───────── */
+.btn-secondary,
+.btn-fx {
+  isolation: isolate;
+  overflow: hidden;
+}
+.btn-fx {
+  position: relative;
+}
+.btn-ripple {
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--ripple, rgb(201 166 107 / 0.38)) 0%, transparent 62%);
+  transform: scale(0);
+  animation: btn-ripple 700ms var(--ease-out) forwards;
+}
+.btn-primary .btn-ripple {
+  --ripple: rgb(255 255 255 / 0.6);
+}
+@keyframes btn-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+/* `scale`, not `transform`: magnetic buttons already own their transform. */
+.btn-primary:active,
+.btn-secondary:active,
+.footer-orb:active,
+.btn-fx:active {
+  scale: 0.96;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(201 166 107 / 0.16), rgb(201 166 107 / 0.05));
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 650ms var(--ease-out);
+}
+.btn-secondary:hover::before,
+.btn-secondary:focus-visible::before {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Only the main action moves on its own: a band of light every few seconds (paused while hovered). */
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: -50% auto -50% -60%;
+    z-index: -1;
+    width: 34%;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.5), transparent);
+    transform: translateX(-120%) skewX(-18deg);
+    animation: btn-idle-sheen 5.5s var(--ease-lux) 2.5s infinite;
+  }
+  .btn-primary:hover::before {
+    opacity: 0;
+  }
+  /* The sticky bar calls once as it slides in. */
+  .sticky-cta[aria-hidden='false'] .btn-primary {
+    animation: cta-call 1.8s var(--ease-out) 350ms 2;
+  }
+  .wa-ping {
+    animation: wa-ping 2.2s ease-out 8s 3;
+  }
+}
+@keyframes btn-idle-sheen {
+  0%,
+  68% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(580%) skewX(-18deg);
+  }
+}
+@keyframes cta-call {
+  0% {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.45),
+      0 0 0 0 rgb(201 166 107 / 0.6);
+  }
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.45),
+      0 0 0 16px rgb(201 166 107 / 0);
+  }
+}
+@keyframes wa-ping {
+  0% {
+    box-shadow: 0 0 0 0 rgb(95 211 141 / 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px rgb(95 211 141 / 0);
+  }
+}
+
+/* ───────── Footer ───────── */
+.footer-orb {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 12rem;
+  height: 12rem;
+  overflow: hidden;
+  border: 1px solid rgb(201 166 107 / 0.45);
+  border-radius: 9999px;
+  color: var(--color-pearl);
+  transition:
+    color 600ms var(--ease-out),
+    border-color 600ms var(--ease-out),
+    transform var(--motion-base) var(--ease-out);
+}
+@media (min-width: 768px) {
+  .footer-orb {
+    width: 14rem;
+    height: 14rem;
+  }
+}
+.footer-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 120%, var(--color-gold-soft), var(--color-gold) 55%, #a8854c);
+  transform: scale(0);
+  transition: transform 700ms var(--ease-out);
+}
+.footer-orb:hover,
+.footer-orb:focus-visible {
+  color: var(--color-abyss);
+  border-color: var(--color-gold);
+}
+.footer-orb:hover::before,
+.footer-orb:focus-visible::before {
+  transform: scale(1);
+}
+.footer-orb-ring {
+  position: absolute;
+  inset: 0.4rem;
+  width: calc(100% - 0.8rem);
+  height: calc(100% - 0.8rem);
+  fill: currentColor;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+}
+.footer-orb-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.footer-orb-arrow {
+  transition: transform 500ms var(--ease-out);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .footer-orb-ring {
+    animation: orb-spin 26s linear infinite;
+  }
+  .footer-orb:hover .footer-orb-arrow {
+    transform: translateX(-8px);
+  }
+}
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.footer-nav-link {
+  transition: color 500ms var(--ease-out);
+}
+.footer-nav-dash {
+  align-self: center;
+  width: 0;
+  height: 1px;
+  margin-inline-end: 0;
+  background: var(--color-gold);
+  transition:
+    width 500ms var(--ease-out),
+    margin 500ms var(--ease-out);
+}
+.footer-nav-link:hover,
+.footer-nav-link:focus-visible {
+  color: var(--color-gold-soft);
+}
+.footer-nav-link:hover .footer-nav-dash,
+.footer-nav-link:focus-visible .footer-nav-dash {
+  width: 1.75rem;
+  margin-inline-end: 0.75rem;
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .group:hover .back-top-arrow {
+    animation: arrow-up 700ms var(--ease-out);
+  }
+}
+@keyframes arrow-up {
+  45% {
+    transform: translateY(-160%);
+  }
+  46% {
+    transform: translateY(160%);
+  }
+}
+
+
+/* --- Live ocean dive (fx-ocean) — stop chrome + gauge --- */
+.dive { overflow-x: clip; }
+.dive .fx-ocean__stop { align-items: flex-start; padding-inline: clamp(1.25rem, 7vw, 6.5rem) clamp(6rem, 16vw, 15rem); }
+.stop__text {
+  position: relative;
+  max-width: 36rem;
+  transition: opacity .7s ease, transform .9s cubic-bezier(.2, .7, .2, 1);
+}
+.stop__text::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -4.5rem -5.5rem;
+  background: radial-gradient(closest-side, rgb(12 22 38 / 0.55), transparent);
+  pointer-events: none;
+}
+.stop h1 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.6rem, 7.4vw, 4.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.3rem;
+  text-wrap: balance;
+  color: var(--color-pearl);
+  text-shadow: 0 2px 30px rgb(12 22 38 / 0.45);
+}
+.stop h2 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2rem, 5.2vw, 3.6rem);
+  line-height: 1.1;
+  margin: 0 0 1rem;
+  color: var(--color-pearl);
+  text-shadow: 0 2px 30px rgb(12 22 38 / 0.45);
+}
+.stop p {
+  margin: 0;
+  max-width: 36ch;
+  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-pearl) 78%, transparent);
+  text-shadow: 0 1px 16px rgb(12 22 38 / 0.7);
+}
+.stop__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+.stop--hero { justify-content: flex-end !important; padding-bottom: clamp(5rem, 14vh, 9rem) !important; }
+/* Only fade the hero stop chrome — never dim real section copy (causes ghost overlaps) */
+.dive.is-ready:not(.fx-ocean--flat) .stop--hero:not(.is-active) .stop__text {
+  opacity: .08;
+  transform: translateY(1.4rem);
+}
+.btn.btn--buoy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: .7rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--color-gold);
+  color: var(--color-abyss);
+  border: 1px solid transparent;
+}
+.btn.btn--buoy:hover { background: var(--color-gold-soft); }
+/* Hero CTA — transparent glass over the water */
+#hero-cta.btn--sea,
+.btn.btn--sea {
+  background: transparent !important;
+  background-color: rgb(4 18 31 / 0.18) !important;
+  color: #fffaf0 !important;
+  border: 1px solid rgb(239 233 222 / 0.55) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+#hero-cta.btn--sea:hover,
+.btn.btn--sea:hover {
+  background: transparent !important;
+  background-color: rgb(4 18 31 / 0.35) !important;
+  color: #fffaf0 !important;
+  border-color: rgb(239 233 222 / 0.8) !important;
+}
+.btn.btn--ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: .7rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  background: rgb(12 22 38 / 0.28);
+  color: var(--color-pearl);
+  border: 1px solid rgb(239 233 222 / 0.45);
+}
+.btn.btn--ghost:hover { border-color: var(--color-pearl); }
+.scroll-hint {
+  position: absolute;
+  bottom: 1.6rem;
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .7rem;
+  margin: 0;
+  font-size: .85rem !important;
+  color: color-mix(in srgb, var(--color-pearl) 70%, transparent);
+  transition: opacity .5s;
+}
+.scroll-hint i {
+  display: block;
+  width: 1px;
+  height: 2.6rem;
+  background: linear-gradient(transparent, var(--color-pearl));
+  transform-origin: top;
+  animation: ocean-hint 2.2s cubic-bezier(.6, 0, .3, 1) infinite;
+}
+.dive:not(.is-ready) .scroll-hint,
+.stop--hero:not(.is-active) .scroll-hint { opacity: 0; }
+@keyframes ocean-hint {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+.ocean-gauge {
+  position: fixed;
+  z-index: 15;
+  left: clamp(1rem, 3.4vw, 2.8rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  direction: ltr;
+  opacity: 0;
+  transition: opacity .6s;
+  pointer-events: none;
+}
+.ocean-gauge.is-on { opacity: 1; }
+.ocean-gauge__scale {
+  position: relative;
+  width: 3rem;
+  height: min(52vh, 27rem);
+  border-left: 1px solid rgb(239 233 222 / 0.45);
+}
+.ocean-gauge__needle {
+  position: absolute;
+  left: -.62rem;
+  top: calc(var(--p, .2) * 100%);
+  width: 0;
+  height: 0;
+  border-top: .42rem solid transparent;
+  border-bottom: .42rem solid transparent;
+  border-left: .62rem solid var(--color-gold);
+  transform: translateY(-50%);
+  transition: top .15s linear;
+}
+.ocean-gauge__read {
+  direction: rtl;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .15rem;
+  text-shadow: 0 1px 14px rgb(12 22 38 / 0.65);
+}
+.ocean-gauge__label { font-size: .8rem; font-weight: 600; color: var(--color-mist); }
+.ocean-gauge__value { display: flex; align-items: baseline; gap: .3rem; }
+.ocean-gauge__num {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1;
+  color: var(--color-pearl);
+  font-variant-numeric: tabular-nums;
+}
+.ocean-gauge__unit { font-size: .95rem; font-weight: 600; color: var(--color-mist); }
+.ocean-gauge.is-under .ocean-gauge__label { color: var(--color-lake); }
+@media (max-width: 900px) {
+  .dive .fx-ocean__stop { padding-inline: 1.25rem; }
+  .stop__text::before { inset: -3rem -1rem; }
+  .ocean-gauge { top: auto; bottom: max(1rem, env(safe-area-inset-bottom)); left: 1rem; transform: none; }
+  .ocean-gauge__scale { display: none; }
+  .ocean-gauge__read {
+    flex-direction: row;
+    align-items: baseline;
+    gap: .5rem;
+    padding: .5rem .85rem;
+    border-radius: 999px;
+    background: rgb(12 22 38 / 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(239 233 222 / 0.16);
+  }
+  .ocean-gauge__num { font-size: 1.6rem; }
+  .stop--hero {
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center;
+    padding-block: 5.5rem 6rem !important;
+  }
+  .stop--hero .stop__text {
+    max-width: 22rem;
+    margin-inline: auto;
+  }
+  .stop--hero .stop__text::before {
+    inset: -2.5rem -1.25rem;
+    background: radial-gradient(closest-side, rgb(4 18 31 / 0.72), transparent);
+  }
+  .stop--hero h1 {
+    font-weight: 500;
+    color: #fffaf0;
+    text-shadow:
+      0 2px 2px rgb(0 8 18 / 0.75),
+      0 10px 36px rgb(0 15 30 / 0.6);
+  }
+  .stop--hero p {
+    margin-inline: auto;
+    max-width: 28ch;
+    font-weight: 500;
+    color: #f4efe6;
+    text-shadow: 0 1px 2px rgb(0 10 20 / 0.7);
+  }
+  .stop--hero .stop__actions {
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+  .scroll-hint { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stop__text { transition: opacity .2s linear; transform: none !important; }
+  .scroll-hint i { animation: none; transform: none; }
+  .ocean-gauge__needle { transition: none; }
+}
+
+
+/* Real site sections as ocean stops — hug content, no empty full-viewport gaps */
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section {
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+  padding-block: clamp(1.75rem, 4vh, 3rem) !important;
+  padding-inline: 0 !important;
+  background: transparent !important;
+}
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section > * {
+  width: 100%;
+  background-color: transparent;
+}
+/* Tighten section chrome inside the dive */
+.dive.fx-ocean .ocean-stop--section section,
+.dive.fx-ocean .ocean-stop--section nav {
+  padding-block: clamp(1.5rem, 3.5vh, 2.75rem) !important;
+}
+.dive.fx-ocean .ocean-stop--section .py-20,
+.dive.fx-ocean .ocean-stop--section .py-16,
+.dive.fx-ocean .ocean-stop--section .py-28,
+.dive.fx-ocean .ocean-stop--section .py-32,
+.dive.fx-ocean .ocean-stop--section .md\:py-24,
+.dive.fx-ocean .ocean-stop--section .md\:py-32,
+.dive.fx-ocean .ocean-stop--section .md\:py-40,
+.dive.fx-ocean .ocean-stop--section .pb-28,
+.dive.fx-ocean .ocean-stop--section .md\:pb-36 {
+  padding-top: clamp(1.5rem, 3.5vh, 2.75rem) !important;
+  padding-bottom: clamp(1.5rem, 3.5vh, 2.75rem) !important;
+}
+/* Pin spacer inside a flex ocean-stop must stretch full width */
+.dive.fx-ocean .ocean-stop--section > .pin-spacer {
+  width: 100% !important;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+/* Works: normal in-flow height — no pin spacer fights with the next stop */
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section:has(#works) {
+  padding-block: clamp(1.75rem, 4vh, 3rem) !important;
+  min-height: 0 !important;
+}
+.dive.fx-ocean .ocean-stop--section:has(#works) #works {
+  min-height: 0 !important;
+  height: auto !important;
+}
+.dive.fx-ocean .ocean-stop--section {
+  isolation: isolate;
+}
+/* Soft readable panels without hiding the water */
+.dive.fx-ocean .ocean-stop--section .glass,
+.dive.fx-ocean .ocean-stop--section .glass-deep {
+  background: rgb(4 18 31 / 0.55);
+  backdrop-filter: blur(12px);
+}
+/* Keep hero stop at one screen */
+.dive.fx-ocean .fx-ocean__stop.stop--hero {
+  min-height: 100vh !important;
+  min-height: 100lvh !important;
+}
+
+/* Underwater type: strong, high-contrast so copy cuts through the sea */
+.dive.fx-ocean .ocean-stop--section,
+.dive.fx-ocean .stop--hero .stop__text {
+  --tw-text-opacity: 1;
+  color: #f7f3ea;
+  text-shadow:
+    0 1px 1px rgb(0 10 20 / 0.55),
+    0 0 28px rgb(0 20 35 / 0.45);
+}
+.dive.fx-ocean .ocean-stop--section h1,
+.dive.fx-ocean .ocean-stop--section h2,
+.dive.fx-ocean .ocean-stop--section h3,
+.dive.fx-ocean .ocean-stop--section .font-display,
+.dive.fx-ocean .stop--hero .stop__text h1 {
+  color: #fffaf0;
+  font-weight: 500;
+  text-shadow:
+    0 2px 2px rgb(0 8 18 / 0.7),
+    0 8px 32px rgb(0 15 30 / 0.55),
+    0 0 1px rgb(0 0 0 / 0.4);
+}
+.dive.fx-ocean .ocean-stop--section .text-mist,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/55,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/45,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/40,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/80,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/90,
+.dive.fx-ocean .ocean-stop--section .text-pearl\/92 {
+  color: rgb(236 230 218 / 0.92) !important;
+  text-shadow: 0 1px 2px rgb(0 10 20 / 0.65);
+}
+.dive.fx-ocean .ocean-stop--section .eyebrow {
+  color: var(--color-gold-soft);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-shadow: 0 1px 2px rgb(0 10 20 / 0.7);
+}
+.dive.fx-ocean .ocean-stop--section p,
+.dive.fx-ocean .ocean-stop--section li {
+  font-weight: 500;
+  color: #f4efe6;
+}
+.dive.fx-ocean .ocean-stop--section .link {
+  color: #fffaf0;
+  font-weight: 600;
+}
+/* No full-section scrim bands — type stays strong via text-shadow only */
+
+/* Dive: strip decorative rules/borders that fight the water */
+.dive.fx-ocean .eyebrow::before,
+.dive.fx-ocean .text-motion .eyebrow.tm::before {
+  display: none;
+}
+.dive.fx-ocean #services ul,
+.dive.fx-ocean #services li {
+  border-color: transparent !important;
+}
+.dive.fx-ocean .fit-depths__pulse {
+  opacity: 0;
+}
+.dive.fx-ocean .ocean-stop--section nav {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.dive.fx-ocean .ocean-stop--section .glass {
+  border-color: rgb(239 233 222 / 0.12);
+  box-shadow: none;
+}
+.dive.fx-ocean #works .h-px {
+  background: transparent !important;
+}
+.dive.fx-ocean .border-pearl\/10,
+.dive.fx-ocean .border-pearl\/\[0\.07\],
+.dive.fx-ocean .border-y {
+  border-color: transparent !important;
+}
+
+/* Depth glass cards — shallow = brighter burnt water, deep = darker burnt */
+.depth-card {
+  list-style: none;
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: 1.15rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  font-weight: 500;
+  line-height: 1.65;
+  color: #fffaf0;
+  text-shadow: 0 1px 2px rgb(0 8 16 / 0.55);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgb(255 220 170 / 0.14);
+}
+.depth-card--shallow {
+  background:
+    linear-gradient(
+      155deg,
+      rgb(90 160 175 / calc(0.38 - var(--card-i, 0) * 0.04)),
+      rgb(28 70 78 / calc(0.42 + var(--card-i, 0) * 0.05))
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 236 200 / 0.18),
+    0 12px 28px -16px rgb(8 30 40 / 0.55);
+}
+.depth-card--deep {
+  background:
+    linear-gradient(
+      160deg,
+      rgb(18 48 62 / calc(0.55 + var(--card-i, 0) * 0.06)),
+      rgb(4 14 24 / calc(0.72 + var(--card-i, 0) * 0.05))
+    );
+  border-color: rgb(201 166 107 / 0.12);
+  color: rgb(236 230 218 / 0.92);
+  box-shadow:
+    inset 0 1px 0 rgb(255 220 170 / 0.06),
+    0 14px 32px -14px rgb(0 8 16 / 0.7);
+}
+.dive.fx-ocean .surface-zone .surface-color {
+  opacity: 0.4;
+}
+
+/* Inner pages: fixed-depth sea, same strong type as the dive */
+.sea-ambient {
+  min-height: 100%;
+}
+.sea-ambient .sea-ambient__stop {
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+  padding-block: clamp(1rem, 3vh, 2rem) 0 !important;
+  padding-inline: 0 !important;
+}
+.sea-ambient .sea-ambient__content {
+  width: 100%;
+  position: relative;
+  color: #f7f3ea;
+  text-shadow:
+    0 1px 1px rgb(0 10 20 / 0.55),
+    0 0 28px rgb(0 20 35 / 0.4);
+}
+.sea-ambient h1,
+.sea-ambient h2,
+.sea-ambient h3,
+.sea-ambient .font-display {
+  color: #fffaf0;
+  font-weight: 500;
+  text-shadow:
+    0 2px 2px rgb(0 8 18 / 0.7),
+    0 8px 32px rgb(0 15 30 / 0.5);
+}
+.sea-ambient .glass,
+.sea-ambient .glass-deep {
+  background: rgb(4 18 31 / 0.55);
+  backdrop-filter: blur(12px);
+}
+.fit-depths__drop {
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+}
+.fit-depths__pulse {
+  display: block;
+  width: min(42rem, 100%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(62 154 168 / 0.55), transparent);
+  box-shadow: 0 0 24px rgb(62 154 168 / 0.35);
+}
+.fit-depths__below {
+  opacity: 0.92;
+  filter: saturate(0.85);
+}
