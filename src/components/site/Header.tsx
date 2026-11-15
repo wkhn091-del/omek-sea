@@ -119,7 +119,9 @@ export function Header() {
   return (
     <>
       <header
-        className={`sticky top-0 z-40 transition-[transform,opacity,background-color,border-color] duration-700 ease-[var(--ease-out)] motion-reduce:transition-none ${
+        className={`sticky top-0 transition-[transform,opacity,background-color,border-color] duration-700 ease-[var(--ease-out)] motion-reduce:transition-none ${
+          menuOpen ? 'z-[55]' : 'z-40'
+        } ${
           hidden && !menuOpen ? '-translate-y-full opacity-0 focus-within:translate-y-0 focus-within:opacity-100' : 'translate-y-0'
         } ${solid ? 'border-b border-pearl/[0.08] bg-abyss/70 backdrop-blur-xl' : 'border-b border-transparent'}`}
       >

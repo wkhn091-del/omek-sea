@@ -2078,7 +2078,7 @@ html[data-sea-mood='storm'] {
   }
 }
 
-/* Mobile nav — glass panel from the right (inline-start in RTL) */
+/* Mobile nav — always slides in from the visual left (physical edge) */
 .site-drawer-scrim {
   position: fixed;
   inset: 0;
@@ -2097,8 +2097,9 @@ html[data-sea-mood='storm'] {
 .site-drawer {
   position: fixed;
   top: 0;
+  left: 0;
+  right: auto;
   bottom: 0;
-  inset-inline-start: 0;
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -2108,22 +2109,14 @@ html[data-sea-mood='storm'] {
     1.35rem
     calc(1.5rem + env(safe-area-inset-bottom, 0px));
   background: rgb(4 18 31 / 0.42);
-  border-inline-end: 1px solid rgb(239 233 222 / 0.12);
+  border-right: 1px solid rgb(239 233 222 / 0.12);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
-  box-shadow: -24px 0 60px -28px rgb(0 0 0 / 0.45);
-  transform: translateX(100%);
+  box-shadow: 24px 0 60px -28px rgb(0 0 0 / 0.45);
+  transform: translateX(-100%);
   transition: transform 0.4s var(--ease-out);
   pointer-events: none;
   visibility: hidden;
-}
-[dir='ltr'] .site-drawer {
-  inset-inline-start: auto;
-  inset-inline-end: 0;
-  border-inline-end: 0;
-  border-inline-start: 1px solid rgb(239 233 222 / 0.12);
-  box-shadow: 24px 0 60px -28px rgb(0 0 0 / 0.45);
-  transform: translateX(100%);
 }
 .site-drawer.is-open {
   transform: translateX(0);
