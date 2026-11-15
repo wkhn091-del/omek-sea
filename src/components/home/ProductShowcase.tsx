@@ -40,9 +40,20 @@ export function ProductShowcase({ eyebrow }: { eyebrow: string }) {
           start: 'top top',
           end: () => `+=${window.innerHeight * 1.4}`,
           pin: true,
+          pinSpacing: true,
+          pinType: 'fixed',
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => setActive(Math.floor(self.progress * (items.length + 0.6)) - 1),
+          onToggle: (self) => {
+            const hide = self.isActive;
+            const stop = section.closest<HTMLElement>('.fx-ocean__stop');
+            for (let el = stop?.nextElementSibling as HTMLElement | null; el; el = el.nextElementSibling as HTMLElement | null) {
+              if (!el.classList.contains('fx-ocean__stop')) continue;
+              el.style.visibility = hide ? 'hidden' : '';
+              el.style.pointerEvents = hide ? 'none' : '';
+            }
+          },
         });
         gsap.fromTo('[data-showcase-line]', { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: section, start: 'top top', end: () => `+=${window.innerHeight * 1.4}`, scrub: 0.6 } });
       }, section);
@@ -65,7 +76,7 @@ export function ProductShowcase({ eyebrow }: { eyebrow: string }) {
       ref={sectionRef}
       id="showcase"
       aria-labelledby="showcase-title"
-      className="group/showcase relative isolate overflow-hidden py-24 md:py-32 lg:flex lg:h-screen lg:items-center lg:pb-0 lg:pt-[var(--header-height)]"
+      className="group/showcase relative isolate overflow-hidden py-24 md:py-32 lg:flex lg:h-screen lg:items-center lg:pb-0 lg:pt-[var(--header-height)] [&.is-pinned]:overflow-visible"
     >
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(55%_60%_at_30%_55%,rgb(201_166_107/0.1),transparent_70%)]"

@@ -9,6 +9,7 @@ import { FitCheck } from '@/components/home/FitCheck';
 import { HeroOpening } from '@/components/home/Hero';
 import { NextSteps } from '@/components/home/NextSteps';
 import { OceanBoot } from '@/components/home/OceanBoot';
+import { SeaLife } from '@/components/home/SeaLife';
 import { ProductShowcase } from '@/components/home/ProductShowcase';
 import { Proof } from '@/components/proof/Proof';
 import { Services } from '@/components/home/Services';
@@ -36,6 +37,7 @@ export default async function HomePage() {
   return (
     <>
       <OceanBoot />
+      <SeaLife />
       <section
         id="hero"
         aria-labelledby="hero-title"
@@ -45,7 +47,7 @@ export default async function HomePage() {
         <HeroOpening hero={home.hero} />
 
         {/* Real site blocks — depth builds down the page; contact is the seabed */}
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-2.5" data-pitch="8" data-mood="sunset">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-2.5" data-pitch="8">
           <WorksShowcase
             projects={content.projects}
             title={home.works.title}
@@ -55,23 +57,23 @@ export default async function HomePage() {
           />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-8" data-pitch="6" data-mood="sunset">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-8" data-pitch="6">
           <FitCheck eyebrow={t('home.fitEyebrow')} />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-16" data-pitch="5" data-mood="day">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-16" data-pitch="5">
           <Proof testimonials={content.testimonials} eyebrow={t('home.proofEyebrow')} />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-28" data-pitch="4" data-mood="day">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-28" data-pitch="4">
           <BusinessPicker />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-42" data-pitch="3" data-mood="sunset">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-42" data-pitch="3">
           <Services section={home.services} services={content.services} eyebrow={t('home.servicesEyebrow')} />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-58" data-pitch="2" data-mood="sunset">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-58" data-pitch="2">
           <section aria-labelledby="about-teaser-title" className="relative overflow-hidden py-10 md:py-14">
             <div className="mx-auto flex max-w-3xl flex-col items-start gap-6 px-5 md:max-w-4xl md:px-10">
               <div className="flex items-center gap-4 md:gap-5">
@@ -112,14 +114,14 @@ export default async function HomePage() {
           </section>
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-78" data-pitch="2" data-mood="night">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-78" data-pitch="2">
           <SurfaceZone>
             <DepthStory depth={home.depth} eyebrow={t('home.depthEyebrow')} ctaLabel={t('common.ctaTalk')} />
             <ProductShowcase eyebrow={t('home.showcaseEyebrow')} />
           </SurfaceZone>
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-105" data-pitch="1" data-mood="night">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-105" data-pitch="1">
           <Faq
             section={home.faq}
             faqs={content.faqs}
@@ -133,7 +135,7 @@ export default async function HomePage() {
           />
         </div>
 
-        <div className="fx-ocean__stop ocean-stop--section" data-level="-140" data-pitch="0" data-mood="night">
+        <div className="fx-ocean__stop ocean-stop--section" data-level="-140" data-pitch="0">
           <SurfaceZone tone="sunset">
             <section id="contact" aria-labelledby="contact-title" className="relative py-28 md:py-40">
               <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-10 lg:grid-cols-[1fr_1.1fr]">

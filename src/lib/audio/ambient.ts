@@ -241,6 +241,15 @@ export function setAmbientHidden(hidden: boolean) {
   else if (enabled) ctx.resume().catch(() => undefined);
 }
 
+/** Soften the lounge bed so sea waves / depth reads stay audible. */
+export function duckAmbient(amount = 0.35) {
+  if (!ctx || !master || !enabled) return;
+  const now = ctx.currentTime;
+  const peak = phone ? PHONE_MASTER_LEVEL : MASTER_LEVEL;
+  master.gain.cancelScheduledValues(now);
+  master.gain.setTargetAtTime(peak * Math.max(0.12, Math.min(1, amount)), now, 0.4);
+}
+
 /** A very soft chime for hovers, in tune with the bed, only while it is on. */
 export function playTick(pitch = 1) {
   if (!enabled || !ctx || ctx.state !== "running") return;

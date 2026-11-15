@@ -61,7 +61,7 @@ export function StickyCta({ whatsappNumber }: { whatsappNumber: string }) {
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
       <div className="flex items-stretch gap-3">
-        <OpenDrawerButton location="sticky" className="btn-primary min-w-0 flex-1" magnetic={false}>
+        <OpenDrawerButton location="sticky" className="btn-primary btn-sea fx-magnet min-w-0 flex-1" magnetic={false}>
           {t('ctaTalk')}
         </OpenDrawerButton>
         <a

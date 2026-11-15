@@ -59,8 +59,8 @@ export function ProjectsBrowser({
   }
 
   const chip = (selected: boolean) =>
-    `min-h-11 rounded-full border px-5 py-2 text-sm tracking-wide transition-colors duration-300 ${
-      selected ? 'border-gold bg-gold text-abyss' : 'border-pearl/20 text-pearl/85 hover:border-gold/70 hover:text-gold-soft'
+    `btn-fx min-h-11 rounded-full border px-5 py-2 text-sm tracking-wide transition-colors duration-300 ${
+      selected ? 'works-chip works-chip--on' : 'works-chip'
     }`;
 
   return (

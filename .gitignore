@@ -58,3 +58,4 @@ docs/audit/screens/*
 !docs/audit/screens/375__scrolled.png
 !docs/audit/screens/bidi_footer_hours_375.png
 !docs/audit/screens/live_lead_submit_375.png
+.vercel

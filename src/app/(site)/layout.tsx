@@ -4,6 +4,7 @@ import { draftMode, headers } from 'next/headers';
 import { VisualEditing } from 'next-sanity/visual-editing';
 import { LeadDrawer } from '@/components/lead/LeadDrawer';
 import { ButtonFx } from '@/components/motion/ButtonFx';
+import { MagnetFill } from '@/components/motion/MagnetFill';
 import { CustomCursor } from '@/components/motion/CustomCursor';
 import { Intro } from '@/components/motion/Intro';
 import { SmoothScroll } from '@/components/motion/SmoothScroll';
@@ -53,6 +54,7 @@ export default async function SiteLayout({ children }: LayoutProps<'/'>) {
       <SmoothScroll />
       <TextMotion />
       <ButtonFx />
+      <MagnetFill />
       <CustomCursor />
       <Analytics nonce={nonce} ga4Id={publicEnv.ga4Id} clarityId={publicEnv.clarityId} />
       <WebVitals />

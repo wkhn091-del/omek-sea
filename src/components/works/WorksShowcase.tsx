@@ -13,8 +13,8 @@ import { ProjectArt } from './ProjectArt';
 const PIN_QUERY = '(min-width: 1024px)';
 
 /**
- * Home gallery. On large screens the section pins and the row of projects glides sideways with the scroll;
- * elsewhere (and before JavaScript) it is a native swipe row with snap points.
+ * Home gallery. On large screens the section pins and the row glides sideways with scroll
+ * (including inside the ocean dive). Elsewhere it is a native swipe row.
  */
 export function WorksShowcase({
   projects,
@@ -27,7 +27,7 @@ export function WorksShowcase({
   title: string;
   intro: string;
   eyebrow: string;
-  /** Inside fx-ocean dive — still pins; refresh after the sea stage mounts. */
+  /** Inside fx-ocean dive — still pins on desktop. */
   oceanEmbed?: boolean;
 }) {
   const t = useTranslations();
@@ -45,7 +45,6 @@ export function WorksShowcase({
     const update = () => {
       frame = 0;
       const max = scroller.scrollWidth - scroller.clientWidth;
-      // RTL rows report scrollLeft from 0 down to -max.
       const ratio = max > 0 ? Math.abs(scroller.scrollLeft) / max : 1;
       bar.style.transform = `scaleX(${(0.12 + ratio * 0.88).toFixed(3)})`;
     };
@@ -60,8 +59,7 @@ export function WorksShowcase({
   }, []);
 
   useEffect(() => {
-    // Inside fx-ocean, pin stacks on the next stop and texts overlap — use native swipe only.
-    if (oceanEmbed || prefersReducedMotion() || !window.matchMedia(PIN_QUERY).matches) return;
+    if (prefersReducedMotion() || !window.matchMedia(PIN_QUERY).matches) return;
     let cancelled = false;
     let revert: (() => void) | undefined;
 
@@ -74,27 +72,68 @@ export function WorksShowcase({
 
       const ctx = gsap.context(() => {
         const distance = () => Math.max(0, track.scrollWidth - section.clientWidth);
+        const stop = section.closest<HTMLElement>('.fx-ocean__stop');
+        const afterStops: HTMLElement[] = [];
+        for (let el = stop?.nextElementSibling as HTMLElement | null; el; el = el.nextElementSibling as HTMLElement | null) {
+          if (el.classList.contains('fx-ocean__stop')) afterStops.push(el);
+        }
+        const setTrail = (hidden: boolean) => {
+          afterStops.forEach((el) => {
+            el.style.visibility = hidden ? 'hidden' : '';
+            el.style.pointerEvents = hidden ? 'none' : '';
+          });
+        };
+
         const scrollTrigger = {
           trigger: section,
           start: 'top top',
-          end: () => `+=${distance()}`,
-          scrub: 0.9,
+          // Never pin with a zero travel — that feels stuck
+          end: () => `+=${Math.max(distance(), Math.round(window.innerHeight * 0.35))}`,
+          scrub: 0.55,
           invalidateOnRefresh: true,
         };
-        // RTL: the row starts on the right and overflows to the left, so it travels in +x.
+        // Stay inside the ocean (no pinReparent slab). Hide later stops so they cannot paint over.
         gsap.to(track, {
           x: () => distance(),
           ease: 'none',
-          scrollTrigger: { ...scrollTrigger, pin: true, anticipatePin: 1 },
+          scrollTrigger: {
+            ...scrollTrigger,
+            pin: true,
+            pinSpacing: true,
+            anticipatePin: 1,
+            pinType: 'fixed',
+            onToggle: (self) => {
+              setTrail(self.isActive);
+              if (!self.isActive) setTrail(false);
+            },
+            onLeave: () => setTrail(false),
+            onLeaveBack: () => setTrail(false),
+            onRefresh: (self) => setTrail(self.isActive),
+          },
         });
-        if (progressRef.current) gsap.fromTo(progressRef.current, { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger });
+        if (progressRef.current) {
+          gsap.fromTo(progressRef.current, { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger });
+        }
         gsap.utils.toArray<HTMLElement>('[data-art]', track).forEach((art) => {
           gsap.fromTo(art, { xPercent: -2 }, { xPercent: 2, ease: 'none', scrollTrigger });
         });
       }, section);
-      ScrollTrigger.refresh();
+
+      const refresh = () => ScrollTrigger.refresh();
+      refresh();
+      const sea = section.closest('.fx-ocean');
+      sea?.addEventListener('fx:ocean-ready', refresh);
+      window.addEventListener('load', refresh);
 
       revert = () => {
+        sea?.removeEventListener('fx:ocean-ready', refresh);
+        window.removeEventListener('load', refresh);
+        const stop = section.closest<HTMLElement>('.fx-ocean__stop');
+        for (let el = stop?.nextElementSibling as HTMLElement | null; el; el = el.nextElementSibling as HTMLElement | null) {
+          if (!el.classList.contains('fx-ocean__stop')) continue;
+          el.style.visibility = '';
+          el.style.pointerEvents = '';
+        }
         ctx.revert();
         section.classList.remove('is-pinned');
       };
@@ -112,11 +151,7 @@ export function WorksShowcase({
       id="works"
       data-dive-landing=""
       aria-labelledby="works-title"
-      className={
-        oceanEmbed
-          ? 'group/works relative overflow-hidden py-10 md:py-14'
-          : 'group/works relative overflow-hidden py-20 md:py-32 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:py-0 [&.is-pinned_.works-scroller]:overflow-visible'
-      }
+      className="group/works relative overflow-hidden py-20 md:py-32 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:py-0 [&.is-pinned]:overflow-visible [&.is-pinned_.works-scroller]:overflow-visible"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 md:flex-row md:items-end md:justify-between md:px-10">
         <div className="max-w-2xl">
@@ -141,9 +176,9 @@ export function WorksShowcase({
 
       <div
         ref={scrollerRef}
-        className="works-scroller mt-5 scroll-px-5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] md:mt-12 md:scroll-px-10 lg:mt-10 [&::-webkit-scrollbar]:hidden"
+        className="works-scroller mt-5 scroll-px-5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] md:mt-12 md:scroll-px-10 lg:mt-10 lg:overflow-visible [&::-webkit-scrollbar]:hidden"
       >
-        <ul ref={trackRef} className="flex w-max snap-x snap-mandatory gap-4 px-5 pb-4 md:gap-8 md:px-10">
+        <ul ref={trackRef} className="flex w-max snap-x snap-mandatory gap-4 px-5 pb-4 md:gap-8 md:px-10 will-change-transform">
           {projects.map((project, i) => (
             <li
               key={project.id}
@@ -179,7 +214,7 @@ export function WorksShowcase({
                     </h3>
                   </div>
                   <span
-                    className="mt-1 inline-flex h-10 w-10 shrink-0 md:h-11 md:w-11 items-center justify-center rounded-full border border-pearl/20 text-lg transition-all duration-500 group-hover:-rotate-45 group-hover:border-gold group-hover:bg-gold group-hover:text-abyss group-has-[a:focus-visible]:-rotate-45 group-has-[a:focus-visible]:border-gold group-has-[a:focus-visible]:bg-gold group-has-[a:focus-visible]:text-abyss"
+                    className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-pearl/20 text-lg transition-all duration-500 group-hover:-rotate-45 group-hover:border-gold group-hover:bg-gold group-hover:text-abyss group-has-[a:focus-visible]:-rotate-45 group-has-[a:focus-visible]:border-gold group-has-[a:focus-visible]:bg-gold group-has-[a:focus-visible]:text-abyss md:h-11 md:w-11"
                     aria-hidden="true"
                   >
                     ←
@@ -189,16 +224,22 @@ export function WorksShowcase({
               </article>
             </li>
           ))}
-          <li className="flex w-[52vw] shrink-0 snap-start items-center justify-center sm:w-[40vw] lg:w-[24vw]">
-            <Link
-              href="/projects"
-              data-magnetic=""
-              className="btn-fx group flex aspect-square w-40 flex-col items-center justify-center gap-2 rounded-full border border-pearl/20 text-center transition-colors duration-500 hover:border-gold hover:bg-gold hover:text-abyss sm:w-56 md:w-64"
-            >
-              <span className="font-display text-2xl md:text-3xl">{t('works.allWorks')}</span>
-              <span aria-hidden="true" className="text-2xl transition-transform duration-500 group-hover:-translate-x-2">
-                ←
+          <li className="w-[72vw] max-w-80 shrink-0 snap-start sm:w-[40vw] lg:w-[clamp(14rem,22vw,19rem)]">
+            <Link href="/projects" data-magnetic="" className="works-cta-card group">
+              <span className="works-cta-card__num" aria-hidden="true">
+                {String(projects.length + 1).padStart(2, '0')}
               </span>
+              <span className="works-cta-card__text">{t('works.allWorks')}</span>
+              <svg className="works-cta-card__arrow" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M20 12H5M11 5l-7 7 7 7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </Link>
           </li>
         </ul>

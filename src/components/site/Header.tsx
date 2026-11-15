@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { SeaMoodSwitcher } from '@/components/home/SeaMoodSwitcher';
 import { SoundToggle } from '@/components/motion/SoundToggle';
 import { Logo } from './Logo';
 import { OpenDrawerButton } from './OpenDrawerButton';
@@ -80,8 +81,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-3">
+          <SeaMoodSwitcher className="hidden md:flex" />
           <SoundToggle />
-          <OpenDrawerButton location="header" className="btn-primary hidden !min-h-11 !px-5 text-sm sm:inline-flex">
+          <OpenDrawerButton location="header" className="btn-primary btn-sea fx-magnet hidden !min-h-11 !px-5 text-sm sm:inline-flex">
             {t('common.ctaTalk')}
           </OpenDrawerButton>
           <button
@@ -110,8 +112,9 @@ export function Header() {
             </li>
           ))}
         </ul>
-        <div className="px-5">
-          <OpenDrawerButton location="menu" className="btn-primary w-full">
+        <div className="flex flex-col gap-4 px-5">
+          <SeaMoodSwitcher className="w-full justify-between" />
+          <OpenDrawerButton location="menu" className="btn-primary btn-sea w-full">
             {t('common.ctaTalk')}
           </OpenDrawerButton>
         </div>

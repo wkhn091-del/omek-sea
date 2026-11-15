@@ -37,7 +37,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   // Reading the request opts every page into dynamic rendering, which the per-request CSP nonce requires.
   await headers();
   return (
-    <html lang="he" dir="rtl" data-scroll-behavior="smooth" className={`${frank.variable} ${heebo.variable}`}>
+    <html lang="he" dir="rtl" data-scroll-behavior="smooth" data-sea-mood="sunset" className={`${frank.variable} ${heebo.variable}`}>
       <body>{children}</body>
     </html>
   );

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/motion/lenis';
 
-const TARGETS = '.btn-primary, .btn-secondary, .footer-orb, .btn-fx';
+const TARGETS = '.btn-primary, .btn-secondary, .btn-chip, .footer-orb, .btn-fx';
 
 /**
  * Every press answers at once: a ripple spreads from the exact point of contact (CSS: .btn-ripple), well inside

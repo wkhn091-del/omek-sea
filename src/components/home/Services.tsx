@@ -36,7 +36,7 @@ export async function Services({ section, services, eyebrow }: { section: HomePa
                   <span className="text-gold-soft">{t('includes')}</span> {service.includes}
                 </p>
               </div>
-              <OpenDrawerButton siteType={service.siteType} location={`service-${service.siteType}`} className="btn-secondary">
+              <OpenDrawerButton siteType={service.siteType} location={`service-${service.siteType}`} className="btn-primary btn-sea fx-magnet shrink-0">
                 {service.ctaLabel}
               </OpenDrawerButton>
             </Reveal>

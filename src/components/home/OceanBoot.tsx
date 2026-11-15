@@ -1,13 +1,31 @@
 'use client';
 
 import { useEffect } from 'react';
+import { duckAmbient } from '@/lib/audio/ambient';
+import { depthFromLevel, setOceanDepthFromLevel, setOceanMood } from '@/lib/audio/ocean-sea';
+import { reconcileSeaMood } from '@/lib/sea-mood';
+
+/** Drive body/biolume darkening from the live ocean camera. */
+const applyDepthCss = (level: number) => {
+  const doc = document.documentElement;
+  const d = depthFromLevel(level);
+  doc.style.setProperty('--depth', d.toFixed(4));
+  doc.style.setProperty('--depth-m', String(Math.max(0, Math.round(-level))));
+};
+
+const clearDepthCss = () => {
+  const doc = document.documentElement;
+  doc.style.removeProperty('--depth');
+  doc.style.removeProperty('--depth-m');
+};
 
 declare global {
   interface HTMLElement {
     fxOcean?: {
-      setMood: (mood: string) => void;
+      setMood: (mood: string, instant?: boolean) => void;
       go: (index: number) => void;
       mood: string;
+      level: number;
     };
   }
 }
@@ -40,6 +58,8 @@ export function OceanBoot() {
         if (label) label.textContent = lv < -0.05 ? 'עומק' : 'גובה';
         gauge.style.setProperty('--p', pos(lv).toFixed(4));
         gauge.classList.toggle('is-under', lv < -0.05);
+        setOceanDepthFromLevel(lv);
+        applyDepthCss(lv);
       };
       const onReady = () => dive.classList.add('is-ready');
       const onFallback = () => gauge.remove();
@@ -75,7 +95,10 @@ export function OceanBoot() {
     const boot = () => {
       if (cancelled) return;
       unwire = wireGauge();
-      seas.forEach((sea) => sea.classList.add('is-ready'));
+      seas.forEach((sea) => {
+        sea.classList.add('is-ready');
+        reconcileSeaMood(sea.fxOcean?.mood || sea.dataset.mood || 'sunset');
+      });
     };
 
     if (existing) {
@@ -101,10 +124,38 @@ export function OceanBoot() {
     const onDive = () => dive?.fxOcean?.go(1);
     diveBtn?.addEventListener('click', onDive);
 
+    /* Sync ocean mood → CTAs + sea audio. Locked mood cannot be overridden by dive stops. */
+    const onMood = (e: Event) => {
+      const mood = reconcileSeaMood((e as CustomEvent<{ mood: string }>).detail.mood);
+      if (mood) setOceanMood(mood);
+    };
+    seas.forEach((sea) => {
+      sea.addEventListener('fx:ocean-mood', onMood);
+      const mood = reconcileSeaMood(sea.dataset.mood || 'sunset');
+      if (mood) setOceanMood(mood);
+    });
+    /* Always listen on the dive for continuous depth → muffling + CSS darkening. */
+    const onDiveLevel = (e: Event) => {
+      const lv = (e as CustomEvent<{ level: number }>).detail.level;
+      setOceanDepthFromLevel(lv);
+      applyDepthCss(lv);
+      /* Lounge ducks further underwater so the muffling reads clearly. */
+      const under = lv >= 0 ? 0 : Math.min(1, -lv / 90);
+      duckAmbient(0.28 * (1 - under * 0.75));
+    };
+    dive?.addEventListener('fx:ocean-level', onDiveLevel);
+    if (dive?.fxOcean && typeof dive.fxOcean.level === 'number') {
+      setOceanDepthFromLevel(dive.fxOcean.level);
+      applyDepthCss(dive.fxOcean.level);
+    }
+
     return () => {
       cancelled = true;
       unwire?.();
       diveBtn?.removeEventListener('click', onDive);
+      dive?.removeEventListener('fx:ocean-level', onDiveLevel);
+      seas.forEach((sea) => sea.removeEventListener('fx:ocean-mood', onMood));
+      clearDepthCss();
     };
   }, []);
 

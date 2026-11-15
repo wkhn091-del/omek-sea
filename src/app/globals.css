@@ -39,6 +39,15 @@
 
 /* Mirrors src/lib/motion-tokens.ts */
 :root {
+  /* Sea CTA tokens — follow html[data-sea-mood] (sunset / day / night / storm) */
+  --sea-cta: #c9a66b;
+  --sea-cta-hot: #e8d4a8;
+  --sea-cta-ink: #120d05;
+  --sea-chip-bg: rgb(4 18 31 / 0.42);
+  --sea-chip-line: rgb(239 233 222 / 0.28);
+  --sea-chip-fg: #f7f3ea;
+  --sea-chip-accent: #c9a66b;
+
   --motion-instant: 100ms;
   --motion-fast: 200ms;
   --motion-base: 300ms;
@@ -82,7 +91,7 @@
     /* Surface: teal-tinted abyss. Deeper scroll → colder, darker water. */
     background: color-mix(
       in srgb,
-      #071820 calc(var(--depth) * 72%),
+      #030a10 calc(var(--depth) * 82%),
       color-mix(in srgb, #0e3a48 28%, var(--color-abyss))
     );
     color: var(--color-pearl);
@@ -145,16 +154,19 @@
     min-height: 52px;
     padding: 0.8rem 1.9rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--color-gold-soft) 0%, var(--color-gold) 55%, #a8854c 100%);
-    color: #120d05;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, var(--sea-cta-hot) 0%, var(--sea-cta) 55%, color-mix(in srgb, var(--sea-cta) 70%, #000) 100%);
+    color: var(--sea-cta-ink);
     font-weight: 700;
     letter-spacing: 0.01em;
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 10px 40px -12px rgb(201 166 107 / 0.55);
+      0 10px 40px -12px color-mix(in srgb, var(--sea-cta) 55%, transparent);
     transition:
       transform var(--motion-base) var(--ease-out),
-      box-shadow var(--motion-base) var(--ease-out);
+      box-shadow var(--motion-base) var(--ease-out),
+      background var(--motion-slow) var(--ease-out),
+      color var(--motion-slow) var(--ease-out);
   }
   .btn-primary::after {
     content: '';
@@ -188,10 +200,12 @@
     min-height: 52px;
     padding: 0.8rem 1.9rem;
     border-radius: 999px;
-    border: 1px solid rgb(239 233 222 / 0.28);
-    color: var(--color-pearl);
+    border: 1px solid var(--sea-chip-line);
+    color: var(--sea-chip-fg);
     font-weight: 500;
-    backdrop-filter: blur(6px);
+    background: var(--sea-chip-bg);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
     transition:
       transform var(--motion-base) var(--ease-out),
       border-color var(--motion-base) var(--ease-out),
@@ -199,9 +213,9 @@
       background-color var(--motion-base) var(--ease-out);
   }
   .btn-secondary:hover {
-    border-color: var(--color-gold);
-    color: var(--color-gold-soft);
-    background: rgb(201 166 107 / 0.06);
+    border-color: var(--sea-chip-accent);
+    color: #fff;
+    background: color-mix(in srgb, var(--sea-chip-bg) 70%, var(--sea-chip-accent) 16%);
   }
 
   .link {
@@ -1376,6 +1390,80 @@ dialog.drawer::backdrop {
 
 /* --- Live ocean dive (fx-ocean) — stop chrome + gauge --- */
 .dive { overflow-x: clip; }
+
+/* Sea life — real fish/kelp/rocks media + particles (gulls deferred) */
+.fx-ocean__stage {
+  position: sticky;
+}
+.fx-ocean__stage .sea-life-video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.7s ease;
+}
+.fx-ocean__stage .sea-life-video--fish {
+  mix-blend-mode: soft-light;
+  z-index: 1;
+}
+/* Kelp / rocks: screen+mask so they read on dark deep water (soft-light vanishes) */
+.fx-ocean__stage .sea-life-video--kelp {
+  mix-blend-mode: screen;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.55) 28%, #000 55%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.55) 28%, #000 55%, #000 100%);
+}
+.fx-ocean__stage .sea-life-video--rocks {
+  mix-blend-mode: overlay;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 42%, rgb(0 0 0 / 0.7) 68%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 42%, rgb(0 0 0 / 0.7) 68%, #000 100%);
+}
+.fx-ocean__stage .sea-life-video--rocks .sea-life-video__el {
+  animation: sea-rocks-drift 48s ease-in-out infinite alternate;
+  transform-origin: 50% 85%;
+  filter: saturate(1.1) contrast(1.15) brightness(1.05);
+}
+@keyframes sea-rocks-drift {
+  from { transform: scale(1.06) translate3d(0, 0, 0); }
+  to { transform: scale(1.14) translate3d(-1.5%, 1.2%, 0); }
+}
+.fx-ocean__stage .sea-life-video__el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% center;
+  filter: saturate(1.15) contrast(1.06);
+}
+.fx-ocean__stage .sea-life-video--kelp .sea-life-video__el {
+  object-position: 50% 80%;
+  filter: saturate(1.35) contrast(1.15) brightness(1.05);
+}
+.fx-ocean__stage .sea-life-video--rocks .sea-life-video__el {
+  object-position: 50% 88%;
+}
+.fx-ocean__stage .sea-life {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: block;
+}
+.fx-ocean__stage canvas:not(.sea-life) {
+  position: relative;
+  z-index: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-ocean__stage .sea-life-video,
+  .fx-ocean__stage .sea-life {
+    display: none !important;
+  }
+}
 .dive .fx-ocean__stop { align-items: flex-start; padding-inline: clamp(1.25rem, 7vw, 6.5rem) clamp(6rem, 16vw, 15rem); }
 .stop__text {
   position: relative;
@@ -1438,24 +1526,260 @@ dialog.drawer::backdrop {
   border: 1px solid transparent;
 }
 .btn.btn--buoy:hover { background: var(--color-gold-soft); }
-/* Hero CTA — transparent glass over the water */
-#hero-cta.btn--sea,
-.btn.btn--sea {
-  background: transparent !important;
-  background-color: rgb(4 18 31 / 0.18) !important;
-  color: #fffaf0 !important;
-  border: 1px solid rgb(239 233 222 / 0.55) !important;
-  box-shadow: none !important;
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
+
+/* ─── Sea moods → CTA tokens (from animation kits: solid pill + glass chip) ─── */
+html[data-sea-mood='sunset'],
+:root {
+  --sea-cta: #c9a66b;
+  --sea-cta-hot: #e8d4a8;
+  --sea-cta-ink: #120d05;
+  --sea-chip-bg: rgb(4 18 31 / 0.42);
+  --sea-chip-line: rgb(255 220 170 / 0.28);
+  --sea-chip-fg: #f7f3ea;
+  --sea-chip-accent: #c9a66b;
 }
-#hero-cta.btn--sea:hover,
-.btn.btn--sea:hover {
-  background: transparent !important;
-  background-color: rgb(4 18 31 / 0.35) !important;
-  color: #fffaf0 !important;
-  border-color: rgb(239 233 222 / 0.8) !important;
+html[data-sea-mood='day'] {
+  --sea-cta: #d4b56a;
+  --sea-cta-hot: #f0e0b0;
+  --sea-cta-ink: #1a1408;
+  --sea-chip-bg: rgb(8 40 55 / 0.38);
+  --sea-chip-line: rgb(142 227 218 / 0.35);
+  --sea-chip-fg: #f4fffd;
+  --sea-chip-accent: #8ee3da;
 }
+html[data-sea-mood='night'] {
+  --sea-cta: #e8d4a8;
+  --sea-cta-hot: #f5ead0;
+  --sea-cta-ink: #0c1626;
+  --sea-chip-bg: rgb(2 12 24 / 0.55);
+  --sea-chip-line: rgb(239 233 222 / 0.22);
+  --sea-chip-fg: #efe9de;
+  --sea-chip-accent: #e8d4a8;
+}
+html[data-sea-mood='storm'] {
+  --sea-cta: #ff6b2c;
+  --sea-cta-hot: #ff8450;
+  --sea-cta-ink: #1b0700;
+  --sea-chip-bg: rgb(8 16 28 / 0.5);
+  --sea-chip-line: rgb(255 140 90 / 0.35);
+  --sea-chip-fg: #fff4ec;
+  --sea-chip-accent: #ff6b2c;
+}
+
+/* Mood switcher — from ocean kit (folder 5) */
+.sea-moods {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border-radius: 999px;
+  background: var(--sea-chip-bg);
+  border: 1px solid var(--sea-chip-line);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+}
+.sea-moods button {
+  font: 600 0.85rem/1 inherit;
+  color: var(--sea-chip-fg);
+  background: none;
+  border: 0;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) var(--ease-out),
+    color var(--motion-base) var(--ease-out);
+}
+.sea-moods button:hover {
+  background: rgb(238 246 245 / 0.12);
+}
+.sea-moods button[aria-pressed='true'] {
+  background: var(--sea-cta);
+  color: var(--sea-cta-ink);
+}
+
+/* Filled sea CTA — kit 5 buoy + kit 9 solid pill + kit 1 magnet wipe */
+.btn-sea.btn-primary,
+#hero-cta.btn-sea,
+.fx-magnet {
+  --fx-magnet-bg: var(--sea-cta);
+  --fx-magnet-ink: var(--sea-cta-ink);
+  --fx-magnet-fill: #fffaf0;
+  --fx-magnet-fill-ink: var(--sea-cta-ink);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--fx-magnet-bg) !important;
+  color: var(--fx-magnet-ink) !important;
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 12px 36px -10px color-mix(in srgb, var(--sea-cta) 55%, transparent) !important;
+}
+.btn-sea.btn-primary:hover,
+#hero-cta.btn-sea:hover,
+.fx-magnet:hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 16px 42px -10px color-mix(in srgb, var(--sea-cta) 65%, transparent) !important;
+}
+
+.fx-magnet__label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.fx-magnet__over {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: inherit;
+  background: var(--fx-magnet-fill);
+  color: var(--fx-magnet-fill-ink);
+  clip-path: circle(0% at var(--fx-x, 50%) var(--fx-y, 50%));
+  transition: clip-path 0.55s cubic-bezier(0.22, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.fx-magnet.is-on .fx-magnet__over,
+.btn-sea.is-on .fx-magnet__over,
+.fx-magnet:focus-visible .fx-magnet__over {
+  clip-path: circle(150% at var(--fx-x, 50%) var(--fx-y, 50%));
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-magnet__over {
+    transition: none;
+  }
+}
+
+/* Kit 9 / Maren — pill + round CTA row */
+.sea-cta-row {
+  align-items: center;
+}
+.sea-cta-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.15rem;
+  height: 3.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--sea-chip-line);
+  background: var(--sea-chip-bg);
+  color: var(--sea-chip-fg);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  transition:
+    border-color var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out),
+    color var(--motion-base) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.sea-cta-round svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  transition: transform 0.45s var(--ease-out);
+}
+.sea-cta-round:hover {
+  border-color: var(--sea-chip-accent);
+  background: var(--sea-cta);
+  color: var(--sea-cta-ink);
+}
+.sea-cta-round:hover svg {
+  transform: translateY(12%);
+}
+
+/* Kit 4 hscroll end-card — solid CTA tile in the works row */
+.works-cta-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 4 / 3;
+  height: 100%;
+  min-height: 12rem;
+  padding: clamp(1.15rem, 2.2vw, 1.6rem);
+  border-radius: 1.5rem;
+  background: var(--sea-cta);
+  color: var(--sea-cta-ink);
+  text-decoration: none;
+  box-shadow: 0 16px 40px -18px color-mix(in srgb, var(--sea-cta) 55%, transparent);
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    background-color var(--motion-slow) var(--ease-out),
+    color var(--motion-slow) var(--ease-out);
+}
+.works-cta-card:hover {
+  background: var(--sea-cta-hot);
+  transform: translateY(-3px);
+}
+.works-cta-card__num {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+.works-cta-card__text {
+  font-family: var(--font-display), serif;
+  font-weight: 300;
+  font-size: clamp(1.85rem, 3.2vw, 2.75rem);
+  line-height: 0.95;
+  max-width: 9ch;
+}
+.works-cta-card__arrow {
+  width: 2.4rem;
+  height: 2.4rem;
+  align-self: flex-start;
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.works-cta-card:hover .works-cta-card__arrow {
+  transform: translateX(-6px);
+}
+
+/* Business picker chips — locked glass pills that follow mood */
+.btn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.15rem;
+  padding: 0.85rem 1.15rem 0.85rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--sea-chip-line);
+  background: var(--sea-chip-bg);
+  color: var(--sea-chip-fg);
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  transition:
+    border-color var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out),
+    color var(--motion-base) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.btn-chip:hover,
+.btn-chip:focus-visible {
+  border-color: var(--sea-chip-accent);
+  color: #fff;
+  background: color-mix(in srgb, var(--sea-chip-bg) 70%, var(--sea-chip-accent) 18%);
+  outline: none;
+}
+.btn-chip:active {
+  transform: scale(0.98);
+}
+.btn-chip__arrow {
+  flex-shrink: 0;
+  color: var(--sea-chip-accent);
+  font-size: 1.05rem;
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.btn-chip:hover .btn-chip__arrow {
+  transform: translateX(-4px);
+}
+
 .btn.btn--ghost {
   display: inline-flex;
   align-items: center;
@@ -1464,11 +1788,33 @@ dialog.drawer::backdrop {
   padding: .7rem 1.5rem;
   border-radius: 999px;
   font-weight: 600;
-  background: rgb(12 22 38 / 0.28);
-  color: var(--color-pearl);
-  border: 1px solid rgb(239 233 222 / 0.45);
+  background: var(--sea-chip-bg);
+  color: var(--sea-chip-fg);
+  border: 1px solid var(--sea-chip-line);
 }
-.btn.btn--ghost:hover { border-color: var(--color-pearl); }
+.btn.btn--ghost:hover {
+  border-color: var(--sea-chip-accent);
+  color: #fff;
+}
+
+/* Works niche filters — same glass language as picker chips */
+.works-chip {
+  border-color: var(--sea-chip-line);
+  background: var(--sea-chip-bg);
+  color: var(--sea-chip-fg);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+.works-chip:hover {
+  border-color: var(--sea-chip-accent);
+  color: #fff;
+}
+.works-chip--on,
+.works-chip--on:hover {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--sea-cta-hot), var(--sea-cta));
+  color: var(--sea-cta-ink);
+}
 .scroll-hint {
   position: absolute;
   bottom: 1.6rem;
@@ -1554,7 +1900,14 @@ dialog.drawer::backdrop {
 @media (max-width: 900px) {
   .dive .fx-ocean__stop { padding-inline: 1.25rem; }
   .stop__text::before { inset: -3rem -1rem; }
-  .ocean-gauge { top: auto; bottom: max(1rem, env(safe-area-inset-bottom)); left: 1rem; transform: none; }
+  /* Sit above the mobile sticky CTA + home indicator */
+  .ocean-gauge {
+    top: auto;
+    bottom: calc(var(--sticky-cta-height, 0px) + 0.75rem + env(safe-area-inset-bottom, 0px));
+    left: max(0.85rem, env(safe-area-inset-left, 0px));
+    transform: none;
+    z-index: 28;
+  }
   .ocean-gauge__scale { display: none; }
   .ocean-gauge__read {
     flex-direction: row;
@@ -1562,7 +1915,7 @@ dialog.drawer::backdrop {
     gap: .5rem;
     padding: .5rem .85rem;
     border-radius: 999px;
-    background: rgb(12 22 38 / 0.5);
+    background: rgb(12 22 38 / 0.55);
     backdrop-filter: blur(10px);
     border: 1px solid rgb(239 233 222 / 0.16);
   }
@@ -1600,6 +1953,55 @@ dialog.drawer::backdrop {
     margin-top: 1.5rem;
   }
   .scroll-hint { display: none !important; }
+}
+
+/* Phone dive — intentional layout, not shrunk desktop */
+@media (max-width: 767px) {
+  .dive .fx-ocean__stop {
+    padding-inline: 1rem !important;
+  }
+  .dive.fx-ocean .fx-ocean__stop.ocean-stop--section {
+    padding-block: clamp(1.25rem, 3.5vh, 2rem) !important;
+  }
+  .dive.fx-ocean .ocean-stop--section section,
+  .dive.fx-ocean .ocean-stop--section nav {
+    padding-block: clamp(1.15rem, 3vh, 2rem) !important;
+  }
+  .dive.fx-ocean .ocean-stop--section h1,
+  .dive.fx-ocean .ocean-stop--section h2 {
+    font-size: clamp(2rem, 9.5vw, 2.75rem);
+    line-height: 1.12;
+  }
+  .dive.fx-ocean .ocean-stop--section p,
+  .dive.fx-ocean .ocean-stop--section li {
+    font-size: 0.98rem;
+    line-height: 1.65;
+  }
+  .stop--hero {
+    min-height: 100svh !important;
+    padding-block:
+      calc(var(--header-height) + 1.25rem + env(safe-area-inset-top, 0px))
+      calc(5.5rem + var(--sticky-cta-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .stop--hero h1 {
+    font-size: clamp(2.15rem, 9vw, 2.85rem);
+  }
+  .sea-moods button {
+    min-height: 2.5rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  .sticky-cta {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+  .dive.fx-ocean .ocean-stop--section .glass,
+  .dive.fx-ocean .ocean-stop--section .glass-deep {
+    background: rgb(4 18 31 / 0.62);
+  }
+  #works .works-scroller {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .stop__text { transition: opacity .2s linear; transform: none !important; }
@@ -1643,17 +2045,41 @@ dialog.drawer::backdrop {
   flex-shrink: 0;
   align-self: stretch;
 }
-/* Works: normal in-flow height — no pin spacer fights with the next stop */
+/* Works: locked pin gallery — full viewport while the row scrubs sideways */
 .dive.fx-ocean .fx-ocean__stop.ocean-stop--section:has(#works) {
-  padding-block: clamp(1.75rem, 4vh, 3rem) !important;
+  padding-block: 0 !important;
   min-height: 0 !important;
 }
 .dive.fx-ocean .ocean-stop--section:has(#works) #works {
-  min-height: 0 !important;
-  height: auto !important;
+  min-height: 100vh;
+  min-height: 100lvh;
 }
-.dive.fx-ocean .ocean-stop--section {
-  isolation: isolate;
+.dive.fx-ocean .ocean-stop--section:has(#works) .pin-spacer {
+  width: 100% !important;
+}
+
+/*
+ * Ocean stops all share z-index:1 from ocean.js — later siblings paint over pinned ones.
+ * Raise the active stop and any stop that currently holds a pin.
+ */
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section {
+  position: relative;
+  z-index: 1;
+}
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section.is-active {
+  z-index: 2;
+}
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section:has(.pin-spacer),
+.dive.fx-ocean .fx-ocean__stop.ocean-stop--section:has(.is-pinned) {
+  z-index: 5;
+}
+
+/* Pinned gallery stays in the dive — never an opaque slab over the water */
+.dive.fx-ocean #works.is-pinned,
+.dive.fx-ocean #depth.is-pinned,
+.dive.fx-ocean #showcase.is-pinned {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 /* Soft readable panels without hiding the water */
 .dive.fx-ocean .ocean-stop--section .glass,
@@ -1751,14 +2177,19 @@ dialog.drawer::backdrop {
   margin: 0;
   padding: 1.1rem 1.25rem;
   border-radius: 1.15rem;
-  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  font-size: clamp(1.02rem, 1.15vw, 1.12rem);
   font-weight: 500;
-  line-height: 1.65;
+  line-height: 1.6;
   color: #fffaf0;
   text-shadow: 0 1px 2px rgb(0 8 16 / 0.55);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid rgb(255 220 170 / 0.14);
+}
+@media (min-width: 768px) {
+  .depth-card {
+    padding: 1.15rem 1.2rem;
+  }
 }
 .depth-card--shallow {
   background:

@@ -81,16 +81,18 @@ export async function Proof({ testimonials, eyebrow }: { testimonials: Testimoni
           </>
         )}
 
-        {/* Large scroll-revealed lines instead of three identical glass cards. */}
-        <ol className={`space-y-10 md:space-y-14 ${hasReviews ? 'mt-10' : 'mt-14'}`}>
+        {/* Mobile: stacked. Desktop: three equal cards across the width. */}
+        <ol
+          className={`grid gap-8 sm:gap-6 md:grid-cols-3 md:gap-5 lg:gap-7 ${hasReviews ? 'mt-10' : 'mt-14'}`}
+        >
           {commitments.map((item, i) => (
-            <Reveal as="li" key={item.title} delay={i * 100} className="grid gap-3 md:grid-cols-[auto_1fr] md:items-baseline md:gap-10">
-              <span className="font-display text-5xl font-light tabular-nums text-pearl/25 md:text-7xl" aria-hidden="true">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <div>
-                <h3 className="font-display text-3xl font-light leading-snug md:text-4xl">{item.title}</h3>
-                <p className="mt-3 max-w-2xl text-lg text-mist md:text-xl">{item.body}</p>
+            <Reveal as="li" key={item.title} delay={i * 100} className="h-full">
+              <div className="depth-card depth-card--shallow flex h-full flex-col gap-3 p-6 md:p-7">
+                <span className="font-display text-4xl font-light tabular-nums text-pearl/35 md:text-5xl" aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <h3 className="font-display text-2xl font-light leading-snug md:text-[1.65rem] lg:text-3xl">{item.title}</h3>
+                <p className="mt-auto text-base leading-relaxed text-mist md:text-lg">{item.body}</p>
               </div>
             </Reveal>
           ))}

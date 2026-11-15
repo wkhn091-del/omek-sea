@@ -42,10 +42,25 @@ export function DepthStory({ depth, eyebrow, ctaLabel }: { depth: HomePage['dept
             start: 'top top',
             end: () => `+=${window.innerHeight * (layers.length - 0.4)}`,
             pin: true,
+            pinSpacing: true,
+            pinType: 'fixed',
             scrub: 0.9,
             anticipatePin: 1,
             invalidateOnRefresh: true,
             onUpdate: (self) => setActive(Math.min(layers.length - 1, Math.floor(self.progress * layers.length * 0.999))),
+            onToggle: (self) => {
+              const hide = self.isActive;
+              for (let el = section.nextElementSibling as HTMLElement | null; el; el = el.nextElementSibling as HTMLElement | null) {
+                el.style.visibility = hide ? 'hidden' : '';
+                el.style.pointerEvents = hide ? 'none' : '';
+              }
+              const stop = section.closest<HTMLElement>('.fx-ocean__stop');
+              for (let el = stop?.nextElementSibling as HTMLElement | null; el; el = el.nextElementSibling as HTMLElement | null) {
+                if (!el.classList.contains('fx-ocean__stop')) continue;
+                el.style.visibility = hide ? 'hidden' : '';
+                el.style.pointerEvents = hide ? 'none' : '';
+              }
+            },
           },
         });
         tl.fromTo('[data-gauge]', { scaleY: 0 }, { scaleY: 1, ease: 'none', duration: layers.length }, 0);
@@ -76,8 +91,9 @@ export function DepthStory({ depth, eyebrow, ctaLabel }: { depth: HomePage['dept
   return (
     <section
       ref={sectionRef}
+      id="depth"
       aria-labelledby="depth-title"
-      className="relative isolate overflow-hidden lg:flex lg:h-screen lg:items-center [&.is-pinned_[data-layer]]:[grid-area:1/1]"
+      className="relative isolate overflow-hidden lg:flex lg:h-screen lg:items-center [&.is-pinned]:overflow-visible [&.is-pinned_[data-layer]]:[grid-area:1/1]"
     >
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_70%_30%,rgb(62_154_168/0.14),transparent_70%)]" aria-hidden="true" />
       <div

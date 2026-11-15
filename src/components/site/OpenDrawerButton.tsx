@@ -21,6 +21,8 @@ export function OpenDrawerButton({
   magnetic?: boolean;
 }) {
   const openDrawer = useSession((s) => s.openDrawer);
+  const magnet = /\bfx-magnet\b|\bbtn-sea\b/.test(className);
+
   return (
     <button
       id={id}
@@ -33,7 +35,16 @@ export function OpenDrawerButton({
         openDrawer(siteType);
       }}
     >
-      {children}
+      {magnet ? (
+        <>
+          <span className="fx-magnet__label">{children}</span>
+          <span className="fx-magnet__over" aria-hidden="true">
+            <span className="fx-magnet__label">{children}</span>
+          </span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }

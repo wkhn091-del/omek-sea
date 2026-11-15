@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
-import { setAmbientHidden, startAmbient, stopAmbient } from '@/lib/audio/ambient';
+import { duckAmbient, setAmbientHidden, startAmbient, stopAmbient } from '@/lib/audio/ambient';
+import { setOceanHidden, startOceanSea, stopOceanSea } from '@/lib/audio/ocean-sea';
 import { useSession } from '@/lib/store/visitor';
 
 export function SoundToggle({ className = '' }: { className?: string }) {
@@ -11,7 +12,11 @@ export function SoundToggle({ className = '' }: { className?: string }) {
   const setOn = useSession((s) => s.setSoundOn);
 
   useEffect(() => {
-    const onVisibility = () => setAmbientHidden(document.hidden);
+    const onVisibility = () => {
+      const hidden = document.hidden;
+      setAmbientHidden(hidden);
+      setOceanHidden(hidden);
+    };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
@@ -19,10 +24,13 @@ export function SoundToggle({ className = '' }: { className?: string }) {
   async function toggle() {
     if (on) {
       stopAmbient();
+      stopOceanSea();
       setOn(false);
-    } else {
-      setOn(await startAmbient());
+      return;
     }
+    const [lounge, sea] = await Promise.all([startAmbient(), startOceanSea()]);
+    if (lounge && sea) duckAmbient(0.28);
+    setOn(lounge || sea);
   }
 
   return (
