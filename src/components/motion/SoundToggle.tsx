@@ -40,6 +40,8 @@ export function SoundToggle({ className = '' }: { className?: string }) {
       aria-pressed={on}
       aria-label={on ? t('off') : t('on')}
       title={on ? t('off') : t('on')}
+      // Cursor’s browser injects data-cursor-ref before hydrate; ignore attr noise on this control.
+      suppressHydrationWarning
       className={`group inline-flex h-11 items-center gap-2 rounded-full px-3 text-xs tracking-[0.2em] text-mist transition-colors hover:text-gold-soft ${className}`}
     >
       <span className="flex h-4 items-end gap-[3px]" aria-hidden="true">

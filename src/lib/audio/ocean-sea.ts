@@ -1,5 +1,5 @@
 /**
- * Procedural sea: surf / foam / rain / deep pressure.
+ * Procedural sea: surf / foam / rain / deep pressure / storm thunder.
  * Depth behaves like real water — highs die in the first metres, then only a dull rumble.
  * Moods are four distinct beds (day / sunset / night / storm).
  *
@@ -12,6 +12,16 @@ import type { SeaMood } from '@/lib/sea-mood';
 const FADE_S = 1.2;
 const MASTER = 0.28;
 const PHONE_MASTER = 0.45;
+/** Quiet between storm strikes (ms) — short enough to notice, long enough to breathe. */
+const THUNDER_GAP_MIN = 3200;
+const THUNDER_GAP_SPAN = 7000;
+
+/** Real recorded thunder / lightning (CC0 / public domain). */
+const THUNDER_URLS = [
+  '/audio/thunder/strike-01.mp3',
+  '/audio/thunder/strike-03.mp3',
+  '/audio/thunder/roll-01.mp3',
+] as const;
 
 type MoodMix = {
   /** Relative surface-wave loudness */
@@ -32,47 +42,63 @@ type MoodMix = {
   air: number;
 };
 
+/**
+ * Loudness order (intentional): storm > night > sunset > day.
+ * Character also diverges so each pick is obvious without looking.
+ */
 const MOOD: Record<SeaMood, MoodMix> = {
+  /* Soft bright wash — quietest bed */
   day: {
-    surf: 1,
-    foam: 0.7,
+    surf: 0.55,
+    foam: 0.28,
     rain: 0,
-    pressure: 0.25,
-    swellHz: 0.14,
-    swellAmt: 0.35,
-    surfHz: 900,
+    pressure: 0.12,
+    swellHz: 0.11,
+    swellAmt: 0.22,
+    surfHz: 980,
     air: 1,
   },
+  /* Warmer mid — more body than day, still calm */
   sunset: {
-    surf: 0.75,
-    foam: 0.4,
+    surf: 0.85,
+    foam: 0.42,
     rain: 0,
-    pressure: 0.35,
-    swellHz: 0.1,
+    pressure: 0.38,
+    swellHz: 0.09,
     swellAmt: 0.4,
-    surfHz: 620,
-    air: 0.65,
+    surfHz: 640,
+    air: 0.62,
   },
+  /* Heavy low sea — louder than sunset, dark and close */
   night: {
-    surf: 0.35,
-    foam: 0.12,
+    surf: 1.05,
+    foam: 0.22,
     rain: 0,
-    pressure: 0.55,
-    swellHz: 0.07,
-    swellAmt: 0.25,
-    surfHz: 420,
-    air: 0.3,
+    pressure: 0.95,
+    swellHz: 0.055,
+    swellAmt: 0.48,
+    surfHz: 360,
+    air: 0.22,
   },
+  /* Loudest — rain, foam, punchy surf + thunder */
   storm: {
-    surf: 1.25,
-    foam: 1,
-    rain: 1,
-    pressure: 0.85,
-    swellHz: 0.22,
-    swellAmt: 0.55,
-    surfHz: 1100,
-    air: 0.9,
+    surf: 1.55,
+    foam: 1.2,
+    rain: 1.15,
+    pressure: 1.1,
+    swellHz: 0.26,
+    swellAmt: 0.7,
+    surfHz: 1250,
+    air: 0.95,
   },
+};
+
+/** Master loudness multipliers — storm > night > sunset > day */
+const MOOD_LOUD: Record<SeaMood, number> = {
+  day: 0.55,
+  sunset: 0.82,
+  night: 1.12,
+  storm: 1.45,
 };
 
 let ctx: AudioContext | null = null;
@@ -88,6 +114,12 @@ let muffler: BiquadFilterNode | null = null;
 let surfFilter: BiquadFilterNode | null = null;
 let swellLfo: OscillatorNode | null = null;
 let swellAmt: GainNode | null = null;
+
+/** Storm thunder — real sample playback on a loud parallel bus. */
+let thunderBus: GainNode | null = null;
+let thunderSamples: AudioBuffer[] = [];
+let thunderLoad: Promise<void> | null = null;
+let thunderTimer = 0;
 
 let sources: AudioScheduledSourceNode[] = [];
 let enabled = false;
@@ -233,8 +265,113 @@ function build(context: AudioContext): GainNode {
   throb.connect(throbAmt).connect(pulseGain.gain);
   sources.push(throb);
 
+  // —— Thunder bus (real samples; bypass bed compressor) ——
+  thunderBus = context.createGain();
+  thunderBus.gain.value = phone ? 0.95 : 0.78;
+  thunderBus.connect(context.destination);
+  void loadThunderSamples(context);
+
   for (const source of sources) source.start();
   return out;
+}
+
+async function loadThunderSamples(context: AudioContext) {
+  if (thunderSamples.length) return;
+  if (thunderLoad) {
+    await thunderLoad;
+    return;
+  }
+  thunderLoad = (async () => {
+    const buffers: AudioBuffer[] = [];
+    for (const url of THUNDER_URLS) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const raw = await res.arrayBuffer();
+        buffers.push(await context.decodeAudioData(raw.slice(0)));
+      } catch {
+        /* skip missing sample */
+      }
+    }
+    thunderSamples = buffers;
+  })();
+  await thunderLoad;
+}
+
+function clearThunderTimer() {
+  if (!thunderTimer) return;
+  window.clearTimeout(thunderTimer);
+  thunderTimer = 0;
+}
+
+/** Arm the storm cadence. `immediate` fires a strike almost now. */
+function armThunder(immediate = false) {
+  clearThunderTimer();
+  if (!enabled || mood !== 'storm' || !ctx) return;
+  const wait = immediate ? 120 + Math.random() * 380 : THUNDER_GAP_MIN + Math.random() * THUNDER_GAP_SPAN;
+  thunderTimer = window.setTimeout(() => {
+    thunderTimer = 0;
+    if (!enabled || mood !== 'storm') return;
+    void strikeThunder();
+    armThunder(false);
+  }, wait);
+}
+
+/**
+ * Play a real thunder / lightning recording.
+ * Near = crack samples louder & brighter; far = long roll, quieter & darker.
+ */
+async function strikeThunder() {
+  if (!ctx || !thunderBus) return;
+  if (ctx.state !== 'running') await ctx.resume().catch(() => undefined);
+  await loadThunderSamples(ctx);
+  if (!thunderSamples.length || mood !== 'storm' || !enabled) return;
+
+  const context = ctx;
+  const now = context.currentTime;
+  const surface = Math.max(0.2, Math.pow(1 - depth01, 1.05));
+  if (depth01 > 0.92) return;
+
+  const near = Math.random() > 0.38;
+  // Prefer short cracks up close; long roll for distant.
+  const pool = near
+    ? thunderSamples.filter((b) => b.duration < 8)
+    : thunderSamples;
+  const picks = pool.length ? pool : thunderSamples;
+  const buffer = picks[Math.floor(Math.random() * picks.length)]!;
+
+  const src = context.createBufferSource();
+  src.buffer = buffer;
+  src.playbackRate.value = near
+    ? 0.94 + Math.random() * 0.14
+    : 0.72 + Math.random() * 0.18;
+
+  const lp = context.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = near ? 14000 * surface + 900 : 4200 * surface + 500;
+  lp.Q.value = 0.5;
+
+  const g = context.createGain();
+  const peak = (near ? 1.15 : 0.7) * surface * (phone ? 1.2 : 1);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.002, peak), now + 0.02);
+  // Fade out before end so looping cadence stays clean
+  const dur = Math.min(buffer.duration / src.playbackRate.value, near ? 6 : 12);
+  g.gain.setValueAtTime(Math.max(0.002, peak), now + Math.max(0.3, dur - 0.9));
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+  src.connect(lp).connect(g).connect(thunderBus);
+  // Distant roll: start a bit into the file so it feels farther
+  const offset = !near && buffer.duration > 4 ? Math.random() * Math.min(4, buffer.duration * 0.35) : 0;
+  src.start(now, offset, dur);
+
+  // Flash the ocean lightning when available (visual sync)
+  try {
+    const sea = document.querySelector<HTMLElement>('.fx-ocean');
+    sea?.fxOcean?._debug?.flash?.(near ? 1 : 0.55);
+  } catch {
+    /* ignore */
+  }
 }
 
 function applyMix() {
@@ -249,26 +386,44 @@ function applyMix() {
   const underGate = Math.pow(d, 0.85);
 
   const peak = phone ? PHONE_MASTER : MASTER;
-  // Storm louder overall; night quieter
-  const moodLoud = mood === 'storm' ? 1.15 : mood === 'night' ? 0.7 : mood === 'day' ? 1 : 0.85;
-  master.gain.setTargetAtTime(peak * moodLoud, now, 0.25);
+  master.gain.setTargetAtTime(peak * MOOD_LOUD[mood], now, 0.18);
 
-  surfBase.gain.setTargetAtTime(m.surf * 0.85 * surfaceGate, now, 0.2);
-  foamBase.gain.setTargetAtTime(m.foam * 0.45 * surfaceGate * m.air, now, 0.2);
-  rainBase.gain.setTargetAtTime(m.rain * 0.55 * (0.35 + 0.65 * surfaceGate), now, 0.2);
-  // Pressure rises underwater; storm has thunder body even near the surface
-  pressureBase.gain.setTargetAtTime(m.pressure * (0.12 + underGate * 0.95), now, 0.25);
+  // Layer weights — night leans on pressure, storm on rain/foam, day stays airy/soft
+  const surfMul = mood === 'night' ? 0.7 : mood === 'day' ? 0.75 : 0.9;
+  const foamMul = mood === 'storm' ? 0.7 : mood === 'night' ? 0.28 : 0.45;
+  const rainMul = mood === 'storm' ? 0.85 : 0.5;
+  const pressureMul =
+    mood === 'night' ? 0.55 + underGate * 0.85
+    : mood === 'storm' ? 0.28 + underGate * 0.9
+    : mood === 'sunset' ? 0.16 + underGate * 0.75
+    : 0.08 + underGate * 0.55;
 
-  // Muffle: ~6 kHz in air → ~250 Hz in the deep (real HF die-off)
-  const openHz = 1800 + m.air * 4200;
-  const closedHz = 180 + m.air * 80;
-  muffler.frequency.setTargetAtTime(openHz * (1 - d) + closedHz * d, now, 0.22);
+  surfBase.gain.setTargetAtTime(m.surf * surfMul * surfaceGate, now, 0.18);
+  foamBase.gain.setTargetAtTime(m.foam * foamMul * surfaceGate * Math.max(0.35, m.air), now, 0.18);
+  rainBase.gain.setTargetAtTime(m.rain * rainMul * (0.45 + 0.55 * surfaceGate), now, 0.18);
+  pressureBase.gain.setTargetAtTime(m.pressure * pressureMul, now, 0.2);
 
-  surfFilter.frequency.setTargetAtTime(m.surfHz * (1 - d * 0.7), now, 0.25);
+  // Tone: day bright → sunset warm → night muffled → storm harsh open
+  const openHz =
+    mood === 'day' ? 7200
+    : mood === 'sunset' ? 4800
+    : mood === 'night' ? 2200
+    : 6500;
+  const closedHz = mood === 'night' ? 140 : 180 + m.air * 60;
+  muffler.frequency.setTargetAtTime(openHz * (1 - d) + closedHz * d, now, 0.18);
+
+  surfFilter.frequency.setTargetAtTime(m.surfHz * (1 - d * 0.7), now, 0.2);
+  surfFilter.Q.setTargetAtTime(mood === 'storm' ? 0.85 : mood === 'night' ? 0.45 : 0.6, now, 0.25);
 
   if (swellLfo && swellAmt) {
     swellLfo.frequency.setTargetAtTime(m.swellHz * (1 + d * 0.4), now, 0.3);
     swellAmt.gain.setTargetAtTime(m.swellAmt * surfaceGate, now, 0.3);
+  }
+
+  if (mood === 'storm') {
+    if (!thunderTimer) armThunder(false);
+  } else {
+    clearThunderTimer();
   }
 }
 
@@ -302,6 +457,13 @@ export async function startOceanSea(): Promise<boolean> {
     master.gain.cancelScheduledValues(now);
     master.gain.setValueAtTime(master.gain.value, now);
     master.gain.linearRampToValueAtTime(phone ? PHONE_MASTER : MASTER, now + FADE_S);
+    if (thunderBus) {
+      thunderBus.gain.cancelScheduledValues(now);
+      thunderBus.gain.setValueAtTime(phone ? 0.95 : 0.78, now);
+    }
+    await loadThunderSamples(ctx);
+    // If already in storm when sound turns on — don't wait a long gap for the first crack.
+    if (mood === 'storm') armThunder(true);
     return true;
   } catch {
     enabled = false;
@@ -311,11 +473,17 @@ export async function startOceanSea(): Promise<boolean> {
 
 export function stopOceanSea() {
   enabled = false;
+  clearThunderTimer();
   if (!ctx || !master) return;
   const now = ctx.currentTime;
   master.gain.cancelScheduledValues(now);
   master.gain.setValueAtTime(master.gain.value, now);
   master.gain.linearRampToValueAtTime(0, now + 0.65);
+  if (thunderBus) {
+    thunderBus.gain.cancelScheduledValues(now);
+    thunderBus.gain.setValueAtTime(thunderBus.gain.value, now);
+    thunderBus.gain.linearRampToValueAtTime(0, now + 0.4);
+  }
   const context = ctx;
   window.setTimeout(() => {
     if (!enabled) context.suspend().catch(() => undefined);
@@ -337,13 +505,17 @@ export function setOceanDepthFromLevel(level: number) {
 
 export function setOceanMood(next: string) {
   if (next !== 'day' && next !== 'sunset' && next !== 'night' && next !== 'storm') return;
-  if (mood === next && !dirty) {
-    // Still force one apply so a late start catches the pick.
-  }
+  const prev = mood;
   mood = next;
   if (enabled && ctx) {
     // Mood change should feel immediate — apply now, not only next frame.
     applyMix();
+    if (next === 'storm' && prev !== 'storm') {
+      void loadThunderSamples(ctx).then(() => {
+        if (enabled && mood === 'storm') armThunder(true);
+      });
+    }
+    if (next !== 'storm') clearThunderTimer();
   }
 }
 

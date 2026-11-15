@@ -27,7 +27,8 @@ type Props = {
 export function Turnstile({ siteKey, action, nonce, onToken, resetKey = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
-  const [ready, setReady] = useState(() => typeof window !== 'undefined' && Boolean(window.turnstile));
+  // Always start false so SSR HTML matches the first client paint (avoids hydration mismatch).
+  const [ready, setReady] = useState(false);
   const onTokenRef = useRef(onToken);
 
   useEffect(() => {

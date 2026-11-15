@@ -72,6 +72,8 @@
   html {
     -webkit-text-size-adjust: 100%;
     background: var(--color-abyss);
+    overflow-x: clip;
+    max-width: 100%;
   }
   html:not(.lenis) {
     scroll-behavior: smooth;
@@ -101,6 +103,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     overflow-x: clip;
+    max-width: 100%;
     /* Room for the mobile sticky CTA so it never covers the end of the page. */
     padding-bottom: var(--sticky-cta-height);
     transition: background-color 200ms linear;
@@ -441,10 +444,14 @@ html.intro-seen .intro {
 /* ───────── Film grain + vignette ───────── */
 .grain {
   position: fixed;
-  inset: -50%;
+  inset: 0;
   z-index: 70;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
   pointer-events: none;
   opacity: 0.07;
+  overflow: hidden;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -1238,7 +1245,7 @@ dialog.drawer::backdrop {
     opacity: 0;
   }
   /* The sticky bar calls once as it slides in. */
-  .sticky-cta[aria-hidden='false'] .btn-primary {
+  .sticky-cta.is-visible .sticky-cta__btn {
     animation: cta-call 1.8s var(--ease-out) 350ms 2;
   }
   .wa-ping {
@@ -1389,7 +1396,16 @@ dialog.drawer::backdrop {
 
 
 /* --- Live ocean dive (fx-ocean) — stop chrome + gauge --- */
-.dive { overflow-x: clip; }
+.dive {
+  overflow-x: clip;
+  max-width: 100%;
+}
+#hero,
+#main,
+header {
+  max-width: 100%;
+  overflow-x: clip;
+}
 
 /* Sea life — real fish/kelp/rocks media + particles (gulls deferred) */
 .fx-ocean__stage {
@@ -1470,13 +1486,9 @@ dialog.drawer::backdrop {
   max-width: 36rem;
   transition: opacity .7s ease, transform .9s cubic-bezier(.2, .7, .2, 1);
 }
-.stop__text::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: -4.5rem -5.5rem;
-  background: radial-gradient(closest-side, rgb(12 22 38 / 0.55), transparent);
-  pointer-events: none;
+/* No dark slab behind hero copy — ocean stays visible */
+.stop--hero .stop__text::before {
+  content: none;
 }
 .stop h1 {
   font-family: var(--font-display);
@@ -1507,7 +1519,19 @@ dialog.drawer::backdrop {
   text-shadow: 0 1px 16px rgb(12 22 38 / 0.7);
 }
 .stop__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
-.stop--hero { justify-content: flex-end !important; padding-bottom: clamp(5rem, 14vh, 9rem) !important; }
+/* Desktop: copy on the side (RTL start). Mobile centers — see max-width media below. */
+.stop--hero {
+  justify-content: flex-end !important;
+  align-items: flex-start !important;
+  text-align: start;
+  padding-block: clamp(5rem, 14vh, 9rem) !important;
+}
+.stop--hero .stop__text {
+  margin-inline: 0;
+}
+.stop--hero .stop__actions {
+  justify-content: flex-start;
+}
 /* Only fade the hero stop chrome — never dim real section copy (causes ghost overlaps) */
 .dive.is-ready:not(.fx-ocean--flat) .stop--hero:not(.is-active) .stop__text {
   opacity: .08;
@@ -1566,9 +1590,9 @@ html[data-sea-mood='storm'] {
   --sea-chip-accent: #ff6b2c;
 }
 
-/* Mood switcher — from ocean kit (folder 5) */
+/* Mood switcher — from ocean kit (folder 5).
+   No `display` here: Tailwind `hidden` / `flex` must win (unlayered CSS beats utilities). */
 .sea-moods {
-  display: flex;
   gap: 0.2rem;
   padding: 0.22rem;
   border-radius: 999px;
@@ -1621,6 +1645,72 @@ html[data-sea-mood='storm'] {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.45),
     0 16px 42px -10px color-mix(in srgb, var(--sea-cta) 65%, transparent) !important;
+}
+
+/* Glass CTA — transparent shell over the sea, not a solid gold slab */
+.btn-sea.btn-sea--glass,
+#hero-cta.btn-sea.btn-sea--glass {
+  --fx-magnet-bg: rgb(4 18 31 / 0.22);
+  --fx-magnet-ink: #fffaf0;
+  --fx-magnet-fill: var(--sea-cta);
+  --fx-magnet-fill-ink: var(--sea-cta-ink);
+  background: rgb(4 18 31 / 0.22) !important;
+  color: #fffaf0 !important;
+  border: 1px solid rgb(239 233 222 / 0.38) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 10px 28px -16px rgb(0 10 20 / 0.45) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.btn-sea.btn-sea--glass:hover,
+#hero-cta.btn-sea.btn-sea--glass:hover {
+  background: rgb(4 18 31 / 0.34) !important;
+  border-color: color-mix(in srgb, var(--sea-cta) 65%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 14px 34px -14px color-mix(in srgb, var(--sea-cta) 40%, transparent) !important;
+}
+
+/* Hero / sticky CTA — no filled rectangle, just glass outline over the sea */
+.btn-hero-ghost,
+#hero-cta.btn-hero-ghost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3.15rem;
+  padding: 0.85rem 1.55rem;
+  border-radius: 999px;
+  border: 1px solid rgb(239 233 222 / 0.42) !important;
+  background: rgb(4 18 31 / 0.18) !important;
+  color: #fffaf0 !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  box-shadow: none !important;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  transition:
+    background 0.3s var(--ease-out),
+    border-color 0.3s var(--ease-out),
+    transform 0.3s var(--ease-out);
+}
+.btn-hero-ghost::after,
+#hero-cta.btn-hero-ghost::after {
+  content: none !important;
+  display: none !important;
+}
+.btn-hero-ghost:hover,
+#hero-cta.btn-hero-ghost:hover {
+  background: rgb(4 18 31 / 0.32) !important;
+  border-color: color-mix(in srgb, var(--sea-cta) 70%, #fff) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+.btn-hero-ghost:active {
+  transform: scale(0.98);
 }
 
 .fx-magnet__label {
@@ -1689,51 +1779,6 @@ html[data-sea-mood='storm'] {
 }
 .sea-cta-round:hover svg {
   transform: translateY(12%);
-}
-
-/* Kit 4 hscroll end-card — solid CTA tile in the works row */
-.works-cta-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  aspect-ratio: 4 / 3;
-  height: 100%;
-  min-height: 12rem;
-  padding: clamp(1.15rem, 2.2vw, 1.6rem);
-  border-radius: 1.5rem;
-  background: var(--sea-cta);
-  color: var(--sea-cta-ink);
-  text-decoration: none;
-  box-shadow: 0 16px 40px -18px color-mix(in srgb, var(--sea-cta) 55%, transparent);
-  transition:
-    transform var(--motion-base) var(--ease-out),
-    background-color var(--motion-slow) var(--ease-out),
-    color var(--motion-slow) var(--ease-out);
-}
-.works-cta-card:hover {
-  background: var(--sea-cta-hot);
-  transform: translateY(-3px);
-}
-.works-cta-card__num {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
-.works-cta-card__text {
-  font-family: var(--font-display), serif;
-  font-weight: 300;
-  font-size: clamp(1.85rem, 3.2vw, 2.75rem);
-  line-height: 0.95;
-  max-width: 9ch;
-}
-.works-cta-card__arrow {
-  width: 2.4rem;
-  height: 2.4rem;
-  align-self: flex-start;
-  transition: transform var(--motion-base) var(--ease-out);
-}
-.works-cta-card:hover .works-cta-card__arrow {
-  transform: translateX(-6px);
 }
 
 /* Business picker chips — locked glass pills that follow mood */
@@ -1899,7 +1944,7 @@ html[data-sea-mood='storm'] {
 .ocean-gauge.is-under .ocean-gauge__label { color: var(--color-lake); }
 @media (max-width: 900px) {
   .dive .fx-ocean__stop { padding-inline: 1.25rem; }
-  .stop__text::before { inset: -3rem -1rem; }
+  .stop__text::before { content: none; }
   /* Sit above the mobile sticky CTA + home indicator */
   .ocean-gauge {
     top: auto;
@@ -1920,22 +1965,27 @@ html[data-sea-mood='storm'] {
     border: 1px solid rgb(239 233 222 / 0.16);
   }
   .ocean-gauge__num { font-size: 1.6rem; }
+  /* Mobile hero: centered in the viewport */
   .stop--hero {
     justify-content: center !important;
     align-items: center !important;
     text-align: center;
-    padding-block: 5.5rem 6rem !important;
+    padding-block:
+      calc(var(--header-height) + 1rem + env(safe-area-inset-top, 0px))
+      calc(4rem + var(--sticky-cta-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
   }
   .stop--hero .stop__text {
     max-width: 22rem;
     margin-inline: auto;
+    width: 100%;
   }
   .stop--hero .stop__text::before {
-    inset: -2.5rem -1.25rem;
-    background: radial-gradient(closest-side, rgb(4 18 31 / 0.72), transparent);
+    content: none;
   }
   .stop--hero h1 {
     font-weight: 500;
+    font-size: clamp(1.9rem, 7.5vw, 2.6rem);
+    line-height: 1.14;
     color: #fffaf0;
     text-shadow:
       0 2px 2px rgb(0 8 18 / 0.75),
@@ -1943,14 +1993,18 @@ html[data-sea-mood='storm'] {
   }
   .stop--hero p {
     margin-inline: auto;
-    max-width: 28ch;
+    max-width: 30ch;
+    font-size: 0.98rem;
+    line-height: 1.55;
     font-weight: 500;
     color: #f4efe6;
     text-shadow: 0 1px 2px rgb(0 10 20 / 0.7);
   }
   .stop--hero .stop__actions {
     justify-content: center;
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
   .scroll-hint { display: none !important; }
 }
@@ -1969,38 +2023,181 @@ html[data-sea-mood='storm'] {
   }
   .dive.fx-ocean .ocean-stop--section h1,
   .dive.fx-ocean .ocean-stop--section h2 {
-    font-size: clamp(2rem, 9.5vw, 2.75rem);
-    line-height: 1.12;
+    font-size: clamp(1.85rem, 8.5vw, 2.45rem);
+    line-height: 1.14;
   }
   .dive.fx-ocean .ocean-stop--section p,
   .dive.fx-ocean .ocean-stop--section li {
-    font-size: 0.98rem;
-    line-height: 1.65;
+    font-size: 0.95rem;
+    line-height: 1.6;
   }
-  .stop--hero {
+  .dive.fx-ocean .fx-ocean__stop.stop--hero {
     min-height: 100svh !important;
+    min-height: 100dvh !important;
+    justify-content: center !important;
     padding-block:
-      calc(var(--header-height) + 1.25rem + env(safe-area-inset-top, 0px))
-      calc(5.5rem + var(--sticky-cta-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
+      calc(var(--header-height) + 0.75rem + env(safe-area-inset-top, 0px))
+      calc(4.5rem + var(--sticky-cta-height, 0px) + env(safe-area-inset-bottom, 0px)) !important;
   }
   .stop--hero h1 {
-    font-size: clamp(2.15rem, 9vw, 2.85rem);
+    font-size: clamp(1.75rem, 8vw, 2.35rem);
+    line-height: 1.16;
+  }
+  .stop--hero p {
+    font-size: 0.92rem;
+    max-width: 28ch;
+  }
+  .stop--hero .btn-primary,
+  .stop--hero .btn-sea {
+    font-size: 0.92rem;
+    padding-inline: 1.15rem;
   }
   .sea-moods button {
     min-height: 2.5rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8rem;
   }
-  .sticky-cta {
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  }
   .dive.fx-ocean .ocean-stop--section .glass,
   .dive.fx-ocean .ocean-stop--section .glass-deep {
     background: rgb(4 18 31 / 0.62);
   }
+  /* Keep ocean visible behind works — no solid slab */
+  .dive.fx-ocean .ocean-stop--section:has(#works),
+  .dive.fx-ocean .ocean-stop--section:has(#works) #works {
+    background: transparent !important;
+  }
   #works .works-scroller {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+  }
+  html.has-sticky-cta {
+    scroll-padding-bottom: calc(var(--sticky-cta-height, 0px) + 1rem);
+  }
+  html.has-sticky-cta body {
+    padding-bottom: calc(var(--sticky-cta-height, 0px) + 1.25rem) !important;
+  }
+}
+
+/* Mobile nav — glass panel from the right (inline-start in RTL) */
+.site-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgb(2 8 16 / 0.35);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease-out);
+}
+.site-drawer-scrim.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.site-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(20.5rem, 86vw);
+  padding:
+    calc(var(--header-height) + 0.75rem + env(safe-area-inset-top, 0px))
+    1.35rem
+    calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  background: rgb(4 18 31 / 0.42);
+  border-inline-end: 1px solid rgb(239 233 222 / 0.12);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: -24px 0 60px -28px rgb(0 0 0 / 0.45);
+  transform: translateX(100%);
+  transition: transform 0.4s var(--ease-out);
+  pointer-events: none;
+  visibility: hidden;
+}
+[dir='ltr'] .site-drawer {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  border-inline-end: 0;
+  border-inline-start: 1px solid rgb(239 233 222 / 0.12);
+  box-shadow: 24px 0 60px -28px rgb(0 0 0 / 0.45);
+  transform: translateX(100%);
+}
+.site-drawer.is-open {
+  transform: translateX(0);
+  pointer-events: auto;
+  visibility: visible;
+}
+.site-drawer__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-drawer,
+  .site-drawer-scrim {
+    transition: none;
+  }
+}
+
+/* Mobile sticky CTA — full-bleed bar, never a floating orphaned pill */
+.sticky-cta {
+  position: fixed;
+  z-index: 45;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgb(239 233 222 / 0.1);
+  background: rgb(4 18 31 / 0.35);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  transform: translate3d(0, 110%, 0);
+  transition: transform 0.35s var(--ease-out);
+  pointer-events: none;
+  display: none;
+}
+.sticky-cta.is-visible {
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+.sticky-cta__inner {
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+}
+.sticky-cta__btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+}
+.sticky-cta__wa {
+  display: inline-flex;
+  flex: 0 0 3.25rem;
+  width: 3.25rem;
+  height: auto;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--color-pearl);
+}
+@media (max-width: 767px) {
+  .sticky-cta {
+    display: block;
+  }
+}
+@media (min-width: 768px) {
+  .sticky-cta {
+    display: none !important;
   }
 }
 @media (prefers-reduced-motion: reduce) {

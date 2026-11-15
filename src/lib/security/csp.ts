@@ -33,6 +33,8 @@ export function buildAppCsp(nonce: string, options: { preview?: boolean } = {}, 
       clarity && 'https://c.bing.com',
     ],
     'font-src': ["'self'"],
+    // Thunder samples + sea-life footage (local and optional CDN).
+    'media-src': ["'self'", 'blob:', 'https://*.cloudfront.net'],
     'connect-src': [
       "'self'",
       // three's GLTFLoader fetch()es the textures embedded in our own .glb files through blob: URLs it creates.

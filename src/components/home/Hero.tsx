@@ -14,33 +14,11 @@ export async function HeroOpening({ hero }: { hero: HomePage['hero'] }) {
         </h1>
         <p>{hero.lead}</p>
         <div className="stop__actions sea-cta-row">
-          <OpenDrawerButton id="hero-cta" location="hero" className="btn-primary btn-sea fx-magnet">
+          <OpenDrawerButton id="hero-cta" location="hero" className="btn-hero-ghost" magnetic={false}>
             {t('common.ctaTalk')}
           </OpenDrawerButton>
-          <button
-            type="button"
-            className="sea-cta-round"
-            data-ocean-dive=""
-            data-magnetic=""
-            aria-label={t('hero.scroll')}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 4v14M5 13l7 7 7-7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
         </div>
       </div>
-      <p className="scroll-hint" aria-hidden="true">
-        <i />
-        {t('hero.scroll')} כדי לצלול
-      </p>
     </div>
   );
 }

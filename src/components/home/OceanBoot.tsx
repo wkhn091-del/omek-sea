@@ -23,9 +23,11 @@ declare global {
   interface HTMLElement {
     fxOcean?: {
       setMood: (mood: string, instant?: boolean) => void;
+      setQuality?: (quality: string) => void;
       go: (index: number) => void;
       mood: string;
       level: number;
+      _debug?: { flash?: (strength?: number) => void };
     };
   }
 }
@@ -98,6 +100,11 @@ export function OceanBoot() {
       seas.forEach((sea) => {
         sea.classList.add('is-ready');
         reconcileSeaMood(sea.fxOcean?.mood || sea.dataset.mood || 'sunset');
+        /* Keep Gerstner detail locked — auto-downgrade flattens the kit waves. */
+        const q = sea.dataset.quality;
+        if (q === 'high' || q === 'mid' || q === 'low') {
+          sea.fxOcean?.setQuality?.(q);
+        }
       });
     };
 
@@ -107,7 +114,8 @@ export function OceanBoot() {
     } else {
       const script = document.createElement('script');
       script.id = 'fx-ocean-lib';
-      script.src = '/ocean.js';
+      /* Cache-bust so the authentic kit shader always reloads after sync. */
+      script.src = `/ocean.js?v=kit5`;
       script.async = true;
       script.addEventListener(
         'load',

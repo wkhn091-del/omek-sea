@@ -224,22 +224,16 @@ export function WorksShowcase({
               </article>
             </li>
           ))}
-          <li className="w-[72vw] max-w-80 shrink-0 snap-start sm:w-[40vw] lg:w-[clamp(14rem,22vw,19rem)]">
-            <Link href="/projects" data-magnetic="" className="works-cta-card group">
-              <span className="works-cta-card__num" aria-hidden="true">
-                {String(projects.length + 1).padStart(2, '0')}
+          <li className="flex w-[52vw] shrink-0 snap-start items-center justify-center sm:w-[40vw] lg:w-[24vw]">
+            <Link
+              href="/projects"
+              data-magnetic=""
+              className="btn-fx group flex aspect-square w-40 flex-col items-center justify-center gap-2 rounded-full border border-pearl/20 text-center transition-colors duration-500 hover:border-gold hover:bg-gold hover:text-abyss sm:w-56 md:w-64"
+            >
+              <span className="font-display text-2xl md:text-3xl">{t('works.allWorks')}</span>
+              <span aria-hidden="true" className="text-2xl transition-transform duration-500 group-hover:-translate-x-2">
+                ←
               </span>
-              <span className="works-cta-card__text">{t('works.allWorks')}</span>
-              <svg className="works-cta-card__arrow" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M20 12H5M11 5l-7 7 7 7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
             </Link>
           </li>
         </ul>

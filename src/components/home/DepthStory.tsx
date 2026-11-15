@@ -126,8 +126,10 @@ export function DepthStory({ depth, eyebrow, ctaLabel }: { depth: HomePage['dept
             </ol>
           </div>
 
-          <div className="mt-12">
-            <OpenDrawerButton location="depth">{ctaLabel}</OpenDrawerButton>
+          <div className="mt-10 md:mt-12">
+            <OpenDrawerButton location="depth" className="btn-primary btn-sea" magnetic={false}>
+              {ctaLabel}
+            </OpenDrawerButton>
           </div>
         </div>
 

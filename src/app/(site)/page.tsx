@@ -43,6 +43,10 @@ export default async function HomePage() {
         aria-labelledby="hero-title"
         className="fx-ocean dive relative isolate -mt-[var(--header-height)]"
         data-mood="sunset"
+        data-quality="high"
+        data-waves="1.15"
+        data-speed="1"
+        data-drift="0.6"
       >
         <HeroOpening hero={home.hero} />
 

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { track } from '@/lib/analytics';
 import { FAB_MESSAGE, whatsappUrl } from '@/lib/domain/whatsapp';
 import { OpenDrawerButton } from './OpenDrawerButton';
@@ -11,15 +12,19 @@ import { WhatsAppIcon } from './WhatsAppIcon';
 const HERO_CTA_ID = 'hero-cta';
 
 /**
- * Mobile only, and on mobile it replaces the floating WhatsApp button (which would sit on top of content).
- * Slides in once the hero CTA leaves the screen; publishes its height so the page can leave room for it.
+ * Mobile only — slides in once the hero CTA leaves the screen.
+ * Portaled to document.body so position:fixed never gets trapped by transforms.
+ * Publishes --sticky-cta-height so the page leaves room under the bar.
  */
 export function StickyCta({ whatsappNumber }: { whatsappNumber: string }) {
   const t = useTranslations('common');
   const tFab = useTranslations('fab');
   const pathname = usePathname();
   const [pastHero, setPastHero] = useState<{ path: string; past: boolean } | null>(null);
+  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const heroCta = document.getElementById(HERO_CTA_ID);
@@ -38,30 +43,39 @@ export function StickyCta({ whatsappNumber }: { whatsappNumber: string }) {
   useEffect(() => {
     const root = document.documentElement;
     const mobile = window.matchMedia('(max-width: 767px)');
+    const el = ref.current;
+
     const apply = () => {
-      const height = visible && mobile.matches ? (ref.current?.offsetHeight ?? 0) : 0;
+      const show = visible && mobile.matches;
+      const height = show && el ? el.offsetHeight : 0;
       root.style.setProperty('--sticky-cta-height', `${height}px`);
+      root.classList.toggle('has-sticky-cta', show);
     };
+
     apply();
     mobile.addEventListener('change', apply);
+    const ro = el && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    if (el && ro) ro.observe(el);
+
     return () => {
       mobile.removeEventListener('change', apply);
+      ro?.disconnect();
       root.style.setProperty('--sticky-cta-height', '0px');
+      root.classList.remove('has-sticky-cta');
     };
-  }, [visible]);
+  }, [visible, mounted]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       ref={ref}
       aria-hidden={!visible}
       inert={!visible}
-      className={`sticky-cta fixed inset-x-0 bottom-0 z-30 border-t border-pearl/10 bg-abyss/85 px-5 py-3 backdrop-blur-xl transition-transform duration-300 ease-[var(--ease-out)] motion-reduce:transition-none md:hidden ${
-        visible ? 'translate-y-0' : 'translate-y-full'
-      }`}
-      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      className={`sticky-cta ${visible ? 'is-visible' : ''}`}
     >
-      <div className="flex items-stretch gap-3">
-        <OpenDrawerButton location="sticky" className="btn-primary btn-sea fx-magnet min-w-0 flex-1" magnetic={false}>
+      <div className="sticky-cta__inner">
+        <OpenDrawerButton location="sticky" className="btn-hero-ghost sticky-cta__btn" magnetic={false}>
           {t('ctaTalk')}
         </OpenDrawerButton>
         <a
@@ -70,11 +84,12 @@ export function StickyCta({ whatsappNumber }: { whatsappNumber: string }) {
           rel="noopener noreferrer"
           aria-label={tFab('label')}
           onClick={() => track('whatsapp_click', { location: 'sticky' })}
-          className="glass btn-fx wa-ping inline-flex w-14 shrink-0 items-center justify-center rounded-full text-pearl"
+          className="sticky-cta__wa glass btn-fx wa-ping"
         >
           <WhatsAppIcon className="h-6 w-6" />
         </a>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
