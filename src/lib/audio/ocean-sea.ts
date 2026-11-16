@@ -12,11 +12,11 @@ import type { SeaMood } from '@/lib/sea-mood';
 const FADE_S = 1.2;
 const MASTER = 0.28;
 const PHONE_MASTER = 0.45;
-/** Quiet between storm strikes — real storms have uneven gaps. */
-const THUNDER_GAP_MIN = 2800;
-const THUNDER_GAP_SPAN = 9000;
+/** Storm strikes — frequent enough that you clearly hear thunder. */
+const THUNDER_GAP_MIN = 1800;
+const THUNDER_GAP_SPAN = 4200;
 
-/** Real recorded thunder / lightning (Mixkit free SFX). */
+/** Real recorded thunder / lightning. */
 const THUNDER_URLS = [
   '/audio/thunder/strike-01.mp3',
   '/audio/thunder/strike-03.mp3',
@@ -265,9 +265,9 @@ function build(context: AudioContext): GainNode {
   throb.connect(throbAmt).connect(pulseGain.gain);
   sources.push(throb);
 
-  // —— Thunder bus (real samples; bypass bed compressor for punch) ——
+  // —— Thunder bus (bypasses bed compressor — must stay loud and dry) ——
   thunderBus = context.createGain();
-  thunderBus.gain.value = phone ? 1.15 : 1.05;
+  thunderBus.gain.value = phone ? 1.6 : 1.45;
   thunderBus.connect(context.destination);
   void loadThunderSamples(context);
 
@@ -277,15 +277,17 @@ function build(context: AudioContext): GainNode {
 
 async function loadThunderSamples(context: AudioContext) {
   if (thunderSamples.length) return;
+  // If a previous attempt loaded nothing, allow a fresh fetch
   if (thunderLoad) {
     await thunderLoad;
-    return;
+    if (thunderSamples.length) return;
+    thunderLoad = null;
   }
   thunderLoad = (async () => {
     const buffers: AudioBuffer[] = [];
     for (const url of THUNDER_URLS) {
       try {
-        const res = await fetch(url);
+        const res = await fetch(`${url}?v=thunder2`);
         if (!res.ok) continue;
         const raw = await res.arrayBuffer();
         buffers.push(await context.decodeAudioData(raw.slice(0)));
@@ -317,67 +319,88 @@ function armThunder(immediate = false) {
   }, wait);
 }
 
+/** Procedural crack + rumble — always audible even if MP3 decode fails. */
+function proceduralThunder(context: AudioContext, destination: AudioNode, near: boolean, surface: number) {
+  const now = context.currentTime;
+  const dur = near ? 1.8 + Math.random() * 1.2 : 3.2 + Math.random() * 2.4;
+  const length = Math.floor(context.sampleRate * dur);
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  let brown = 0;
+  for (let i = 0; i < length; i++) {
+    const t = i / context.sampleRate;
+    const white = Math.random() * 2 - 1;
+    brown = (brown + white * 0.02) * 0.996;
+    // Sharp attack crack, then long low roll
+    const env =
+      t < 0.04 ? t / 0.04
+      : t < 0.18 ? 1
+      : Math.exp(-(t - 0.18) * (near ? 1.6 : 0.7));
+    const crack = white * (near ? 0.55 : 0.25) * Math.exp(-t * 18);
+    data[i] = (brown * 2.8 + crack) * env * 0.9;
+  }
+
+  const src = context.createBufferSource();
+  src.buffer = buffer;
+  const lp = context.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = near ? 9000 : 2400;
+  const g = context.createGain();
+  const peak = (near ? 2.2 : 1.4) * surface * (phone ? 1.3 : 1);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.01, peak), now + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  src.connect(lp).connect(g).connect(destination);
+  src.start(now);
+}
+
 /**
- * Play a real thunder / lightning recording.
- * Near = crack samples louder & brighter; far = long roll, quieter & darker.
+ * Lightning strike: sample if available, always reinforce with procedural body
+ * so thunder is never silent.
  */
 async function strikeThunder() {
   if (!ctx || !thunderBus) return;
   if (ctx.state !== 'running') await ctx.resume().catch(() => undefined);
+  if (mood !== 'storm' || !enabled) return;
   await loadThunderSamples(ctx);
-  if (!thunderSamples.length || mood !== 'storm' || !enabled) return;
 
   const context = ctx;
   const now = context.currentTime;
-  const surface = Math.max(0.2, Math.pow(1 - depth01, 1.05));
-  if (depth01 > 0.92) return;
+  // Still hear thunder a bit underwater — don't mute until deep abyss
+  const surface = Math.max(0.35, Math.pow(1 - depth01, 0.85));
+  if (depth01 > 0.96) return;
 
-  // ~55% near crack (lightning overhead), rest distant roll
-  const near = Math.random() > 0.45;
-  const pool = near
-    ? thunderSamples.filter((b) => b.duration < 10)
-    : thunderSamples.filter((b) => b.duration >= 4);
-  const picks = pool.length ? pool : thunderSamples;
-  const buffer = picks[Math.floor(Math.random() * picks.length)]!;
+  const near = Math.random() > 0.4;
 
-  const src = context.createBufferSource();
-  src.buffer = buffer;
-  // Near: sharp crack. Far: slower, heavier roll.
-  src.playbackRate.value = near
-    ? 0.98 + Math.random() * 0.08
-    : 0.68 + Math.random() * 0.14;
-
-  // Split: bright crack path + deep body path (more “real” than a single lowpass)
-  const crackHp = context.createBiquadFilter();
-  crackHp.type = 'highpass';
-  crackHp.frequency.value = near ? 180 : 60;
-  crackHp.Q.value = 0.7;
-
-  const bodyLp = context.createBiquadFilter();
-  bodyLp.type = 'lowpass';
-  bodyLp.frequency.value = near ? 12000 * surface + 1800 : 2800 * surface + 400;
-  bodyLp.Q.value = 0.55;
-
-  const g = context.createGain();
-  const peak = (near ? 1.55 : 0.95) * surface * (phone ? 1.25 : 1);
-  g.gain.setValueAtTime(0.0001, now);
-  // Fast attack = lightning snap
-  g.gain.exponentialRampToValueAtTime(Math.max(0.002, peak), now + (near ? 0.012 : 0.04));
-  const dur = Math.min(buffer.duration / src.playbackRate.value, near ? 5.5 : 14);
-  g.gain.setValueAtTime(Math.max(0.002, peak * 0.85), now + Math.max(0.25, dur * 0.35));
-  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-
-  src.connect(crackHp).connect(bodyLp).connect(g).connect(thunderBus);
-  const offset = !near && buffer.duration > 3 ? Math.random() * Math.min(2.5, buffer.duration * 0.25) : 0;
-  src.start(now, offset, dur);
-
-  // Visual lightning sync — brighter for near strikes
+  // Flash first so the eye and ear land together
   try {
     const sea = document.querySelector<HTMLElement>('.fx-ocean');
-    sea?.fxOcean?._debug?.flash?.(near ? 1.15 : 0.6);
+    sea?.fxOcean?._debug?.flash?.(near ? 1.25 : 0.7);
   } catch {
     /* ignore */
   }
+
+  // Always play procedural crack — guaranteed audible
+  proceduralThunder(context, thunderBus, near, surface);
+
+  // Layer real sample on top when decode succeeded
+  if (!thunderSamples.length) return;
+  const buffer = thunderSamples[Math.floor(Math.random() * thunderSamples.length)]!;
+  const src = context.createBufferSource();
+  src.buffer = buffer;
+  src.playbackRate.value = near ? 0.95 + Math.random() * 0.12 : 0.75 + Math.random() * 0.15;
+
+  const g = context.createGain();
+  const peak = (near ? 2.4 : 1.5) * surface * (phone ? 1.35 : 1);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.01, peak), now + 0.02);
+  const dur = Math.min(buffer.duration / src.playbackRate.value, near ? 6 : 12);
+  g.gain.setValueAtTime(Math.max(0.01, peak * 0.7), now + Math.max(0.2, dur * 0.4));
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+  // Direct path — no filters that can mute the hit
+  src.connect(g).connect(thunderBus);
+  src.start(now);
 }
 
 function applyMix() {
@@ -465,7 +488,7 @@ export async function startOceanSea(): Promise<boolean> {
     master.gain.linearRampToValueAtTime(phone ? PHONE_MASTER : MASTER, now + FADE_S);
     if (thunderBus) {
       thunderBus.gain.cancelScheduledValues(now);
-      thunderBus.gain.setValueAtTime(phone ? 1.15 : 1.05, now);
+      thunderBus.gain.setValueAtTime(phone ? 1.6 : 1.45, now);
     }
     await loadThunderSamples(ctx);
     // If already in storm when sound turns on — don't wait a long gap for the first crack.
