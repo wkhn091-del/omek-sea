@@ -100,11 +100,8 @@ export function OceanBoot() {
       seas.forEach((sea) => {
         sea.classList.add('is-ready');
         reconcileSeaMood(sea.fxOcean?.mood || sea.dataset.mood || 'sunset');
-        /* Keep Gerstner detail locked — auto-downgrade flattens the kit waves. */
-        const q = sea.dataset.quality;
-        if (q === 'high' || q === 'mid' || q === 'low') {
-          sea.fxOcean?.setQuality?.(q);
-        }
+        /* Always lock Gerstner to high — auto-downgrade flattens the kit waves. */
+        sea.fxOcean?.setQuality?.('high');
       });
     };
 
@@ -115,7 +112,7 @@ export function OceanBoot() {
       const script = document.createElement('script');
       script.id = 'fx-ocean-lib';
       /* Cache-bust so the authentic kit shader always reloads after sync. */
-      script.src = `/ocean.js?v=kit5`;
+      script.src = `/ocean.js?v=kit6`;
       script.async = true;
       script.addEventListener(
         'load',

@@ -12,11 +12,11 @@ import type { SeaMood } from '@/lib/sea-mood';
 const FADE_S = 1.2;
 const MASTER = 0.28;
 const PHONE_MASTER = 0.45;
-/** Quiet between storm strikes (ms) — short enough to notice, long enough to breathe. */
-const THUNDER_GAP_MIN = 3200;
-const THUNDER_GAP_SPAN = 7000;
+/** Quiet between storm strikes — real storms have uneven gaps. */
+const THUNDER_GAP_MIN = 2800;
+const THUNDER_GAP_SPAN = 9000;
 
-/** Real recorded thunder / lightning (CC0 / public domain). */
+/** Real recorded thunder / lightning (Mixkit free SFX). */
 const THUNDER_URLS = [
   '/audio/thunder/strike-01.mp3',
   '/audio/thunder/strike-03.mp3',
@@ -265,9 +265,9 @@ function build(context: AudioContext): GainNode {
   throb.connect(throbAmt).connect(pulseGain.gain);
   sources.push(throb);
 
-  // —— Thunder bus (real samples; bypass bed compressor) ——
+  // —— Thunder bus (real samples; bypass bed compressor for punch) ——
   thunderBus = context.createGain();
-  thunderBus.gain.value = phone ? 0.95 : 0.78;
+  thunderBus.gain.value = phone ? 1.15 : 1.05;
   thunderBus.connect(context.destination);
   void loadThunderSamples(context);
 
@@ -332,43 +332,49 @@ async function strikeThunder() {
   const surface = Math.max(0.2, Math.pow(1 - depth01, 1.05));
   if (depth01 > 0.92) return;
 
-  const near = Math.random() > 0.38;
-  // Prefer short cracks up close; long roll for distant.
+  // ~55% near crack (lightning overhead), rest distant roll
+  const near = Math.random() > 0.45;
   const pool = near
-    ? thunderSamples.filter((b) => b.duration < 8)
-    : thunderSamples;
+    ? thunderSamples.filter((b) => b.duration < 10)
+    : thunderSamples.filter((b) => b.duration >= 4);
   const picks = pool.length ? pool : thunderSamples;
   const buffer = picks[Math.floor(Math.random() * picks.length)]!;
 
   const src = context.createBufferSource();
   src.buffer = buffer;
+  // Near: sharp crack. Far: slower, heavier roll.
   src.playbackRate.value = near
-    ? 0.94 + Math.random() * 0.14
-    : 0.72 + Math.random() * 0.18;
+    ? 0.98 + Math.random() * 0.08
+    : 0.68 + Math.random() * 0.14;
 
-  const lp = context.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = near ? 14000 * surface + 900 : 4200 * surface + 500;
-  lp.Q.value = 0.5;
+  // Split: bright crack path + deep body path (more “real” than a single lowpass)
+  const crackHp = context.createBiquadFilter();
+  crackHp.type = 'highpass';
+  crackHp.frequency.value = near ? 180 : 60;
+  crackHp.Q.value = 0.7;
+
+  const bodyLp = context.createBiquadFilter();
+  bodyLp.type = 'lowpass';
+  bodyLp.frequency.value = near ? 12000 * surface + 1800 : 2800 * surface + 400;
+  bodyLp.Q.value = 0.55;
 
   const g = context.createGain();
-  const peak = (near ? 1.15 : 0.7) * surface * (phone ? 1.2 : 1);
+  const peak = (near ? 1.55 : 0.95) * surface * (phone ? 1.25 : 1);
   g.gain.setValueAtTime(0.0001, now);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.002, peak), now + 0.02);
-  // Fade out before end so looping cadence stays clean
-  const dur = Math.min(buffer.duration / src.playbackRate.value, near ? 6 : 12);
-  g.gain.setValueAtTime(Math.max(0.002, peak), now + Math.max(0.3, dur - 0.9));
+  // Fast attack = lightning snap
+  g.gain.exponentialRampToValueAtTime(Math.max(0.002, peak), now + (near ? 0.012 : 0.04));
+  const dur = Math.min(buffer.duration / src.playbackRate.value, near ? 5.5 : 14);
+  g.gain.setValueAtTime(Math.max(0.002, peak * 0.85), now + Math.max(0.25, dur * 0.35));
   g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-  src.connect(lp).connect(g).connect(thunderBus);
-  // Distant roll: start a bit into the file so it feels farther
-  const offset = !near && buffer.duration > 4 ? Math.random() * Math.min(4, buffer.duration * 0.35) : 0;
+  src.connect(crackHp).connect(bodyLp).connect(g).connect(thunderBus);
+  const offset = !near && buffer.duration > 3 ? Math.random() * Math.min(2.5, buffer.duration * 0.25) : 0;
   src.start(now, offset, dur);
 
-  // Flash the ocean lightning when available (visual sync)
+  // Visual lightning sync — brighter for near strikes
   try {
     const sea = document.querySelector<HTMLElement>('.fx-ocean');
-    sea?.fxOcean?._debug?.flash?.(near ? 1 : 0.55);
+    sea?.fxOcean?._debug?.flash?.(near ? 1.15 : 0.6);
   } catch {
     /* ignore */
   }
@@ -459,7 +465,7 @@ export async function startOceanSea(): Promise<boolean> {
     master.gain.linearRampToValueAtTime(phone ? PHONE_MASTER : MASTER, now + FADE_S);
     if (thunderBus) {
       thunderBus.gain.cancelScheduledValues(now);
-      thunderBus.gain.setValueAtTime(phone ? 0.95 : 0.78, now);
+      thunderBus.gain.setValueAtTime(phone ? 1.15 : 1.05, now);
     }
     await loadThunderSamples(ctx);
     // If already in storm when sound turns on — don't wait a long gap for the first crack.

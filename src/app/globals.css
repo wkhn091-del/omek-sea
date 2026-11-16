@@ -1407,7 +1407,7 @@ header {
   overflow-x: clip;
 }
 
-/* Sea life — real fish/kelp/rocks media + particles (gulls deferred) */
+/* Sea life — fish + small seabed rocks/coral (no giant kelp/tree) */
 .fx-ocean__stage {
   position: sticky;
 }
@@ -1424,27 +1424,34 @@ header {
   mix-blend-mode: soft-light;
   z-index: 1;
 }
-/* Kelp / rocks: screen+mask so they read on dark deep water (soft-light vanishes) */
-.fx-ocean__stage .sea-life-video--kelp {
-  mix-blend-mode: screen;
+/* Seabed detail only — masked to the lower strip so nothing reads as a giant underwater tree */
+.fx-ocean__stage .sea-life-video--rocks,
+.fx-ocean__stage .sea-life-video--coral {
+  mix-blend-mode: soft-light;
   z-index: 1;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.55) 28%, #000 55%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.55) 28%, #000 55%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 58%, rgb(0 0 0 / 0.45) 72%, #000 88%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 58%, rgb(0 0 0 / 0.45) 72%, #000 88%);
 }
-.fx-ocean__stage .sea-life-video--rocks {
+.fx-ocean__stage .sea-life-video--coral {
   mix-blend-mode: overlay;
-  z-index: 1;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 42%, rgb(0 0 0 / 0.7) 68%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, transparent 42%, rgb(0 0 0 / 0.7) 68%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 62%, rgb(0 0 0 / 0.5) 78%, #000 92%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 62%, rgb(0 0 0 / 0.5) 78%, #000 92%);
 }
-.fx-ocean__stage .sea-life-video--rocks .sea-life-video__el {
-  animation: sea-rocks-drift 48s ease-in-out infinite alternate;
-  transform-origin: 50% 85%;
-  filter: saturate(1.1) contrast(1.15) brightness(1.05);
+.fx-ocean__stage .sea-life-video--rocks .sea-life-video__el,
+.fx-ocean__stage .sea-life-video--coral .sea-life-video__el {
+  animation: sea-bed-drift 56s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+  /* Slight zoom so we see close reef texture, not a full landscape prop */
+  filter: saturate(1.2) contrast(1.12) brightness(0.95);
 }
-@keyframes sea-rocks-drift {
-  from { transform: scale(1.06) translate3d(0, 0, 0); }
-  to { transform: scale(1.14) translate3d(-1.5%, 1.2%, 0); }
+.fx-ocean__stage .sea-life-video--coral .sea-life-video__el {
+  animation-duration: 64s;
+  animation-delay: -12s;
+  filter: saturate(1.35) contrast(1.1) brightness(0.92);
+}
+@keyframes sea-bed-drift {
+  from { transform: scale(1.35) translate3d(0, 4%, 0); }
+  to { transform: scale(1.42) translate3d(-1.2%, 5.5%, 0); }
 }
 .fx-ocean__stage .sea-life-video__el {
   display: block;
@@ -1454,12 +1461,11 @@ header {
   object-position: 70% center;
   filter: saturate(1.15) contrast(1.06);
 }
-.fx-ocean__stage .sea-life-video--kelp .sea-life-video__el {
-  object-position: 50% 80%;
-  filter: saturate(1.35) contrast(1.15) brightness(1.05);
-}
 .fx-ocean__stage .sea-life-video--rocks .sea-life-video__el {
-  object-position: 50% 88%;
+  object-position: 50% 94%;
+}
+.fx-ocean__stage .sea-life-video--coral .sea-life-video__el {
+  object-position: 40% 96%;
 }
 .fx-ocean__stage .sea-life {
   position: absolute;

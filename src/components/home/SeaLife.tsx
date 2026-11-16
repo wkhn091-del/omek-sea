@@ -3,12 +3,12 @@
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/motion/lenis';
 
-/** Real footage — fish, kelp forest, reef rocks. (Gulls deferred.) */
+/** Real underwater detail — fish + small rocks/coral. No giant kelp/tree. */
 const FISH_REMOTE =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260622_204221_5339e40b-e73d-4ab0-9c65-79c18c66fd50.mp4';
 const FISH_LOCAL = '/sea/marine-life.mp4';
-const KELP_LOCAL = '/sea/kelp.mp4';
 const ROCKS_PHOTO = '/sea/rocks.jpg';
+const CORAL_PHOTO = '/sea/coral.jpg';
 
 type Mote = {
   x: number;
@@ -21,7 +21,7 @@ type Mote = {
   bright: number;
 };
 
-type LayerKind = 'fish' | 'kelp' | 'rocks';
+type LayerKind = 'fish' | 'rocks' | 'coral';
 
 type Layer = {
   wrap: HTMLDivElement;
@@ -31,9 +31,9 @@ type Layer = {
 
 /**
  * Sea life on the sticky ocean stage:
- * - Real fish / kelp / rocks underwater
- * - Marine-snow particles underwater
- * Gulls intentionally omitted for now — reattach later.
+ * - Fish mid-water
+ * - Small realistic rocks + coral on the seabed (never a full-frame giant plant)
+ * - Marine-snow particles
  */
 export function SeaLife() {
   useEffect(() => {
@@ -97,7 +97,6 @@ export function SeaLife() {
     };
 
     const opacityFor = (kind: LayerKind, d: number, lv: number) => {
-      // Deep abyss: fade media so blackness wins over bright blends
       const abyssTaper = d > 0.7 ? Math.max(0.25, 1 - (d - 0.7) / 0.45) : 1;
       const phoneMul = phone ? 0.82 : 1;
 
@@ -106,19 +105,12 @@ export function SeaLife() {
         if (lv > -0.8) return Math.min(0.5, (0.35 - lv) / 1.8) * phoneMul;
         return Math.min(0.78, 0.35 + d * 0.5) * phoneMul * abyssTaper;
       }
-      if (kind === 'kelp') {
-        if (d < 0.06) return 0;
-        let op = 0;
-        if (d < 0.2) op = ((d - 0.06) / 0.14) * 0.5;
-        else if (d < 0.7) op = 0.5 + (d - 0.2) * 0.45;
-        else op = Math.max(0.2, 0.72 - (d - 0.7) * 1.1);
-        return op * phoneMul * abyssTaper;
-      }
-      // rocks
-      if (d < 0.15) return 0;
+      // Rocks / coral: only once you're under, as small seabed detail — never a wall of vegetation
+      if (d < 0.18) return 0;
       let op = 0;
-      if (d < 0.35) op = ((d - 0.15) / 0.2) * 0.55;
-      else op = Math.min(0.75, 0.5 + (d - 0.35) * 0.45);
+      if (d < 0.4) op = ((d - 0.18) / 0.22) * 0.42;
+      else op = Math.min(0.58, 0.4 + (d - 0.4) * 0.35);
+      if (kind === 'coral') op *= 0.85;
       return op * phoneMul * abyssTaper;
     };
 
@@ -204,7 +196,8 @@ export function SeaLife() {
         img.alt = '';
         img.decoding = 'async';
         img.src = src;
-        img.style.objectPosition = '50% 85%';
+        // Anchor to seabed — cropped close so it reads as small reef detail, not a giant prop
+        img.style.objectPosition = kind === 'coral' ? '45% 92%' : '50% 94%';
         media = img;
       } else {
         const video = document.createElement('video');
@@ -217,7 +210,7 @@ export function SeaLife() {
         video.setAttribute('playsinline', '');
         video.preload = 'auto';
         video.src = src;
-        video.style.objectPosition = kind === 'fish' ? '70% center' : '50% 80%';
+        video.style.objectPosition = '70% center';
         media = video;
         video.play().catch(() => undefined);
       }
@@ -243,8 +236,8 @@ export function SeaLife() {
       raf = 0;
 
       makeLayer(stage, 'fish', FISH_LOCAL, 'sea-life-video sea-life-video--fish');
-      makeLayer(stage, 'kelp', KELP_LOCAL, 'sea-life-video sea-life-video--kelp');
       makeLayer(stage, 'rocks', ROCKS_PHOTO, 'sea-life-video sea-life-video--rocks');
+      makeLayer(stage, 'coral', CORAL_PHOTO, 'sea-life-video sea-life-video--coral');
 
       const fish = layers.find((l) => l.kind === 'fish');
       if (fish?.media instanceof HTMLVideoElement) {

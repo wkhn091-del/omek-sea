@@ -44,9 +44,9 @@ export default async function HomePage() {
         className="fx-ocean dive relative isolate -mt-[var(--header-height)]"
         data-mood="sunset"
         data-quality="high"
-        data-waves="1.15"
+        data-waves="1.35"
         data-speed="1"
-        data-drift="0.6"
+        data-drift="0.55"
       >
         <HeroOpening hero={home.hero} />
 
